@@ -19,90 +19,134 @@ export type Database = {
           account: string
           avg_comments: number
           avg_likes: number
+          bio: string | null
           brand: string | null
+          categories: string[]
+          created_at: string
+          created_by: string | null
+          engagement_rate: number | null
+          followers: number
+          id: string
+          last_post_date: string | null
+          photo_url: string | null
+          platform: string
+          profile_url: string | null
+          seq: number | null
+          updated_at: string
+        }
+        Insert: {
+          account: string
+          avg_comments?: number
+          avg_likes?: number
+          bio?: string | null
+          brand?: string | null
+          categories?: string[]
+          created_at?: string
+          created_by?: string | null
+          engagement_rate?: number | null
+          followers?: number
+          id?: string
+          last_post_date?: string | null
+          photo_url?: string | null
+          platform?: string
+          profile_url?: string | null
+          seq?: number | null
+          updated_at?: string
+        }
+        Update: {
+          account?: string
+          avg_comments?: number
+          avg_likes?: number
+          bio?: string | null
+          brand?: string | null
+          categories?: string[]
+          created_at?: string
+          created_by?: string | null
+          engagement_rate?: number | null
+          followers?: number
+          id?: string
+          last_post_date?: string | null
+          photo_url?: string | null
+          platform?: string
+          profile_url?: string | null
+          seq?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_influencers: {
+        Row: {
           contact_date: string | null
           contact_status: string
           content_draft: boolean
           contract_returned: boolean
           contract_sent: boolean
           created_at: string
-          engagement_rate: number | null
-          followers: number
           id: string
+          influencer_id: string
           memo: string | null
-          photo_url: string | null
-          platform: string
-          profile_url: string | null
           reply_date: string | null
           reply_status: string
           result_comments: number | null
           result_likes: number | null
-          seq: number | null
           terms_status: string
           updated_at: string
           upload_date: string | null
           upload_link: string | null
+          user_id: string
           views: number | null
         }
         Insert: {
-          account: string
-          avg_comments?: number
-          avg_likes?: number
-          brand?: string | null
           contact_date?: string | null
           contact_status?: string
           content_draft?: boolean
           contract_returned?: boolean
           contract_sent?: boolean
           created_at?: string
-          engagement_rate?: number | null
-          followers?: number
           id?: string
+          influencer_id: string
           memo?: string | null
-          photo_url?: string | null
-          platform?: string
-          profile_url?: string | null
           reply_date?: string | null
           reply_status?: string
           result_comments?: number | null
           result_likes?: number | null
-          seq?: number | null
           terms_status?: string
           updated_at?: string
           upload_date?: string | null
           upload_link?: string | null
+          user_id: string
           views?: number | null
         }
         Update: {
-          account?: string
-          avg_comments?: number
-          avg_likes?: number
-          brand?: string | null
           contact_date?: string | null
           contact_status?: string
           content_draft?: boolean
           contract_returned?: boolean
           contract_sent?: boolean
           created_at?: string
-          engagement_rate?: number | null
-          followers?: number
           id?: string
+          influencer_id?: string
           memo?: string | null
-          photo_url?: string | null
-          platform?: string
-          profile_url?: string | null
           reply_date?: string | null
           reply_status?: string
           result_comments?: number | null
           result_likes?: number | null
-          seq?: number | null
           terms_status?: string
           updated_at?: string
           upload_date?: string | null
           upload_link?: string | null
+          user_id?: string
           views?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "saved_influencers_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
