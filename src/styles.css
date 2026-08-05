@@ -143,3 +143,18 @@
     color: var(--color-foreground);
   }
 }
+
+@theme inline {
+  --font-sans: "Pretendard Variable", Pretendard, "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
