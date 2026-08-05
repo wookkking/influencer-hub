@@ -13,6 +13,17 @@ export type Influencer = {
   avg_likes: number;
   avg_comments: number;
   engagement_rate: number | null;
+  categories: string[];
+  bio: string | null;
+  last_post_date: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type SavedInfluencer = {
+  id: string;
+  user_id: string;
+  influencer_id: string;
   contact_status: string;
   contact_date: string | null;
   reply_status: string;
@@ -30,10 +41,33 @@ export type Influencer = {
   created_at: string;
 };
 
+export type SavedWithInfluencer = SavedInfluencer & { influencer: Influencer };
+
 export const CONTACT_STATUS = ["미컨택", "컨택완료", "보류"] as const;
 export const REPLY_STATUS = ["대기", "답변완료", "거절"] as const;
 export const TERMS_STATUS = ["미정", "협의중", "협의완료"] as const;
 export const PLATFORMS = ["인스타", "유튜브", "틱톡", "블로그"] as const;
+export const CATEGORIES = [
+  "뷰티",
+  "패션",
+  "일상",
+  "푸드",
+  "홈/리빙",
+  "건강/다이어트",
+  "육아/키즈",
+  "여행",
+  "테크",
+  "펫",
+] as const;
+
+export const nf = new Intl.NumberFormat("ko-KR");
+
+export function engagement(row: Pick<Influencer, "followers" | "avg_likes" | "avg_comments">) {
+  if (!row.followers) return 0;
+  return ((row.avg_likes + row.avg_comments) / row.followers) * 100;
+}
+
+/* ---------------- directory entry form ---------------- */
 
 const optionalUrl = z
   .string()
@@ -49,9 +83,55 @@ export const influencerSchema = z.object({
   account: z.string().trim().min(1, "계정을 입력하세요").max(80),
   photo_url: optionalUrl,
   profile_url: optionalUrl,
+  bio: z.string().trim().max(300).optional().or(z.literal("")),
+  categories: z.array(z.string()).max(10),
   followers: z.coerce.number().int().min(0).max(1_000_000_000),
   avg_likes: z.coerce.number().int().min(0).max(1_000_000_000),
   avg_comments: z.coerce.number().int().min(0).max(1_000_000_000),
+  last_post_date: z.string().optional().or(z.literal("")),
+});
+
+export type InfluencerFormValues = z.infer<typeof influencerSchema>;
+
+const nullIfEmpty = (v: string | undefined) => (v && v.length > 0 ? v : null);
+const numOrNull = (v: string | undefined) =>
+  v && v.length > 0 && !Number.isNaN(Number(v)) ? Number(v) : null;
+
+export function toInfluencerRow(values: InfluencerFormValues) {
+  return {
+    brand: nullIfEmpty(values.brand),
+    platform: values.platform,
+    account: values.account,
+    photo_url: nullIfEmpty(values.photo_url),
+    profile_url: nullIfEmpty(values.profile_url),
+    bio: nullIfEmpty(values.bio),
+    categories: values.categories,
+    followers: values.followers,
+    avg_likes: values.avg_likes,
+    avg_comments: values.avg_comments,
+    last_post_date: nullIfEmpty(values.last_post_date),
+  };
+}
+
+export function toInfluencerForm(row?: Influencer | null): InfluencerFormValues {
+  return {
+    brand: row?.brand ?? "",
+    platform: (row?.platform as InfluencerFormValues["platform"]) ?? "인스타",
+    account: row?.account ?? "",
+    photo_url: row?.photo_url ?? "",
+    profile_url: row?.profile_url ?? "",
+    bio: row?.bio ?? "",
+    categories: row?.categories ?? [],
+    followers: row?.followers ?? 0,
+    avg_likes: row?.avg_likes ?? 0,
+    avg_comments: row?.avg_comments ?? 0,
+    last_post_date: row?.last_post_date ?? "",
+  };
+}
+
+/* ---------------- campaign (saved) form ---------------- */
+
+export const campaignSchema = z.object({
   contact_status: z.enum(CONTACT_STATUS),
   contact_date: z.string().optional().or(z.literal("")),
   reply_status: z.enum(REPLY_STATUS),
@@ -68,22 +148,10 @@ export const influencerSchema = z.object({
   memo: z.string().trim().max(1000).optional().or(z.literal("")),
 });
 
-export type InfluencerFormValues = z.infer<typeof influencerSchema>;
+export type CampaignFormValues = z.infer<typeof campaignSchema>;
 
-const nullIfEmpty = (v: string | undefined) => (v && v.length > 0 ? v : null);
-const numOrNull = (v: string | undefined) =>
-  v && v.length > 0 && !Number.isNaN(Number(v)) ? Number(v) : null;
-
-export function toRow(values: InfluencerFormValues) {
+export function toCampaignRow(values: CampaignFormValues) {
   return {
-    brand: nullIfEmpty(values.brand),
-    platform: values.platform,
-    account: values.account,
-    photo_url: nullIfEmpty(values.photo_url),
-    profile_url: nullIfEmpty(values.profile_url),
-    followers: values.followers,
-    avg_likes: values.avg_likes,
-    avg_comments: values.avg_comments,
     contact_status: values.contact_status,
     contact_date: nullIfEmpty(values.contact_date),
     reply_status: values.reply_status,
@@ -101,21 +169,13 @@ export function toRow(values: InfluencerFormValues) {
   };
 }
 
-export function toFormValues(row?: Influencer | null): InfluencerFormValues {
+export function toCampaignForm(row?: SavedInfluencer | null): CampaignFormValues {
   return {
-    brand: row?.brand ?? "",
-    platform: (row?.platform as InfluencerFormValues["platform"]) ?? "인스타",
-    account: row?.account ?? "",
-    photo_url: row?.photo_url ?? "",
-    profile_url: row?.profile_url ?? "",
-    followers: row?.followers ?? 0,
-    avg_likes: row?.avg_likes ?? 0,
-    avg_comments: row?.avg_comments ?? 0,
-    contact_status: (row?.contact_status as InfluencerFormValues["contact_status"]) ?? "미컨택",
+    contact_status: (row?.contact_status as CampaignFormValues["contact_status"]) ?? "미컨택",
     contact_date: row?.contact_date ?? "",
-    reply_status: (row?.reply_status as InfluencerFormValues["reply_status"]) ?? "대기",
+    reply_status: (row?.reply_status as CampaignFormValues["reply_status"]) ?? "대기",
     reply_date: row?.reply_date ?? "",
-    terms_status: (row?.terms_status as InfluencerFormValues["terms_status"]) ?? "미정",
+    terms_status: (row?.terms_status as CampaignFormValues["terms_status"]) ?? "미정",
     contract_sent: row?.contract_sent ?? false,
     contract_returned: row?.contract_returned ?? false,
     content_draft: row?.content_draft ?? false,
@@ -128,25 +188,52 @@ export function toFormValues(row?: Influencer | null): InfluencerFormValues {
   };
 }
 
-export async function fetchInfluencers(): Promise<Influencer[]> {
-  const { data, error } = await supabase
-    .from("influencers")
-    .select("*")
-    .order("seq", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: true });
+/* ---------------- queries ---------------- */
+
+export type DirectoryFilters = {
+  q: string;
+  platform: string;
+  categories: string[];
+  minFollowers: number | null;
+  maxFollowers: number | null;
+  sort: "followers" | "engagement" | "recent";
+};
+
+export async function fetchDirectory(filters: DirectoryFilters): Promise<Influencer[]> {
+  let query = supabase.from("influencers").select("*").limit(300);
+
+  if (filters.q.trim()) {
+    const term = `%${filters.q.trim()}%`;
+    query = query.or(`account.ilike.${term},brand.ilike.${term},bio.ilike.${term}`);
+  }
+  if (filters.platform !== "전체") query = query.eq("platform", filters.platform);
+  if (filters.categories.length) query = query.overlaps("categories", filters.categories);
+  if (filters.minFollowers != null) query = query.gte("followers", filters.minFollowers);
+  if (filters.maxFollowers != null) query = query.lte("followers", filters.maxFollowers);
+
+  if (filters.sort === "recent") query = query.order("created_at", { ascending: false });
+  else query = query.order("followers", { ascending: false });
+
+  const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []) as unknown as Influencer[];
+  const rows = (data ?? []) as unknown as Influencer[];
+  if (filters.sort === "engagement") {
+    return [...rows].sort((a, b) => engagement(b) - engagement(a));
+  }
+  return rows;
 }
 
-export async function createInfluencer(values: InfluencerFormValues) {
-  const { error } = await supabase.from("influencers").insert(toRow(values) as never);
+export async function createInfluencer(values: InfluencerFormValues, userId: string) {
+  const { error } = await supabase
+    .from("influencers")
+    .insert({ ...toInfluencerRow(values), created_by: userId } as never);
   if (error) throw error;
 }
 
 export async function updateInfluencer(id: string, values: InfluencerFormValues) {
   const { error } = await supabase
     .from("influencers")
-    .update(toRow(values) as never)
+    .update(toInfluencerRow(values) as never)
     .eq("id", id);
   if (error) throw error;
 }
@@ -156,4 +243,34 @@ export async function deleteInfluencer(id: string) {
   if (error) throw error;
 }
 
-export const nf = new Intl.NumberFormat("ko-KR");
+export async function fetchSaved(): Promise<SavedWithInfluencer[]> {
+  const { data, error } = await supabase
+    .from("saved_influencers")
+    .select("*, influencer:influencers(*)")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as unknown as SavedWithInfluencer[];
+}
+
+export async function saveInfluencer(influencerId: string, userId: string) {
+  const { error } = await supabase
+    .from("saved_influencers")
+    .insert({ influencer_id: influencerId, user_id: userId } as never);
+  if (error) throw error;
+}
+
+export async function unsaveInfluencer(influencerId: string) {
+  const { error } = await supabase
+    .from("saved_influencers")
+    .delete()
+    .eq("influencer_id", influencerId);
+  if (error) throw error;
+}
+
+export async function updateSaved(id: string, patch: Record<string, unknown>) {
+  const { error } = await supabase
+    .from("saved_influencers")
+    .update(patch as never)
+    .eq("id", id);
+  if (error) throw error;
+}
