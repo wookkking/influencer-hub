@@ -312,6 +312,31 @@ function SearchPage() {
                   ))}
                 </div>
               )}
+
+              {isAdmin && (
+                <div className="flex justify-end gap-1 border-t border-border pt-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditing(row);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <Pencil className="size-3.5" /> 수정
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => {
+                      if (confirm(`${row.account} 계정을 삭제할까요?`)) remove.mutate(row.id);
+                    }}
+                  >
+                    <Trash2 className="size-3.5" /> 삭제
+                  </Button>
+                </div>
+              )}
             </article>
           );
         })}
@@ -325,9 +350,14 @@ function SearchPage() {
 
       <InfluencerFormDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSubmit={handleCreate}
+        onOpenChange={(o) => {
+          setDialogOpen(o);
+          if (!o) setEditing(null);
+        }}
+        row={editing}
+        onSubmit={handleSubmit}
       />
+
     </div>
   );
 }
