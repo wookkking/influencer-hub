@@ -71,6 +71,7 @@ const FOLLOWER_RANGES = [
 
 function SearchPage() {
   const { user } = useSessionUser();
+  const { isAdmin } = useIsAdmin();
   const queryClient = useQueryClient();
 
   const [q, setQ] = useState("");
@@ -79,6 +80,7 @@ function SearchPage() {
   const [rangeIdx, setRangeIdx] = useState(0);
   const [sort, setSort] = useState<DirectoryFilters["sort"]>("followers");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Influencer | null>(null);
 
   const range = FOLLOWER_RANGES[rangeIdx]!;
   const filters: DirectoryFilters = {
@@ -111,11 +113,27 @@ function SearchPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "저장에 실패했습니다"),
   });
 
-  async function handleCreate(values: InfluencerFormValues) {
+  const remove = useMutation({
+    mutationFn: (id: string) => deleteInfluencer(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["directory"] });
+      await queryClient.invalidateQueries({ queryKey: ["saved"] });
+      toast.success("삭제했습니다");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "삭제에 실패했습니다"),
+  });
+
+  async function handleSubmit(values: InfluencerFormValues) {
     if (!user) return;
-    await createInfluencer(values, user.id);
+    if (editing) {
+      await updateInfluencer(editing.id, values);
+      toast.success("수정했습니다");
+    } else {
+      await createInfluencer(values, user.id);
+      toast.success("디렉터리에 등록했습니다");
+    }
     await queryClient.invalidateQueries({ queryKey: ["directory"] });
-    toast.success("디렉터리에 등록했습니다");
+    await queryClient.invalidateQueries({ queryKey: ["saved"] });
   }
 
   const rows = directory.data ?? [];
@@ -129,10 +147,18 @@ function SearchPage() {
             조건에 맞는 계정을 찾아 내 캠페인 리스트에 담아보세요.
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="size-4" /> 인플루언서 등록
-        </Button>
+        {isAdmin && (
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="size-4" /> 인플루언서 등록
+          </Button>
+        )}
       </div>
+
 
       <div className="space-y-4 rounded-xl border border-border bg-card p-4">
         <div className="flex flex-wrap gap-2">
