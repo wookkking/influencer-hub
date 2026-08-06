@@ -231,7 +231,7 @@ function SearchPage() {
                     )}
                   </div>
                   <p className="truncate text-xs text-muted-foreground">
-                    {row.bio || row.brand || row.platform}
+                    {row.bio || row.platform}
                   </p>
                 </div>
                 <Button

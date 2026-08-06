@@ -201,7 +201,7 @@ export async function fetchDirectory(filters: DirectoryFilters): Promise<Influen
 
   if (filters.q.trim()) {
     const term = `%${filters.q.trim()}%`;
-    query = query.or(`account.ilike.${term},brand.ilike.${term},bio.ilike.${term}`);
+    query = query.or(`account.ilike.${term},bio.ilike.${term}`);
   }
   if (filters.platform !== "전체") query = query.eq("platform", filters.platform);
   if (filters.categories.length) query = query.overlaps("categories", filters.categories);
