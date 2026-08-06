@@ -166,7 +166,7 @@ function SearchPage() {
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="계정, 브랜드, 소개 검색"
+              placeholder="계정, 소개 검색"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
