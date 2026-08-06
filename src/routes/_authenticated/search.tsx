@@ -2,9 +2,18 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Bookmark, BookmarkCheck, ExternalLink, Plus, Search } from "lucide-react";
+import {
+  Bookmark,
+  BookmarkCheck,
+  ExternalLink,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 
 import { useSessionUser } from "@/hooks/use-session-user";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -20,13 +29,16 @@ import {
   CATEGORIES,
   PLATFORMS,
   createInfluencer,
+  deleteInfluencer,
   engagement,
   fetchDirectory,
   fetchSaved,
   nf,
   saveInfluencer,
   unsaveInfluencer,
+  updateInfluencer,
   type DirectoryFilters,
+  type Influencer,
   type InfluencerFormValues,
 } from "@/lib/influencers";
 
@@ -59,6 +71,7 @@ const FOLLOWER_RANGES = [
 
 function SearchPage() {
   const { user } = useSessionUser();
+  const { isAdmin } = useIsAdmin();
   const queryClient = useQueryClient();
 
   const [q, setQ] = useState("");
@@ -67,6 +80,7 @@ function SearchPage() {
   const [rangeIdx, setRangeIdx] = useState(0);
   const [sort, setSort] = useState<DirectoryFilters["sort"]>("followers");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Influencer | null>(null);
 
   const range = FOLLOWER_RANGES[rangeIdx]!;
   const filters: DirectoryFilters = {
@@ -99,11 +113,27 @@ function SearchPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "저장에 실패했습니다"),
   });
 
-  async function handleCreate(values: InfluencerFormValues) {
+  const remove = useMutation({
+    mutationFn: (id: string) => deleteInfluencer(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["directory"] });
+      await queryClient.invalidateQueries({ queryKey: ["saved"] });
+      toast.success("삭제했습니다");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "삭제에 실패했습니다"),
+  });
+
+  async function handleSubmit(values: InfluencerFormValues) {
     if (!user) return;
-    await createInfluencer(values, user.id);
+    if (editing) {
+      await updateInfluencer(editing.id, values);
+      toast.success("수정했습니다");
+    } else {
+      await createInfluencer(values, user.id);
+      toast.success("디렉터리에 등록했습니다");
+    }
     await queryClient.invalidateQueries({ queryKey: ["directory"] });
-    toast.success("디렉터리에 등록했습니다");
+    await queryClient.invalidateQueries({ queryKey: ["saved"] });
   }
 
   const rows = directory.data ?? [];
@@ -117,10 +147,18 @@ function SearchPage() {
             조건에 맞는 계정을 찾아 내 캠페인 리스트에 담아보세요.
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="size-4" /> 인플루언서 등록
-        </Button>
+        {isAdmin && (
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="size-4" /> 인플루언서 등록
+          </Button>
+        )}
       </div>
+
 
       <div className="space-y-4 rounded-xl border border-border bg-card p-4">
         <div className="flex flex-wrap gap-2">
@@ -128,7 +166,7 @@ function SearchPage() {
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="계정, 브랜드, 소개 검색"
+              placeholder="계정, 소개 검색"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
@@ -231,7 +269,7 @@ function SearchPage() {
                     )}
                   </div>
                   <p className="truncate text-xs text-muted-foreground">
-                    {row.bio || row.brand || row.platform}
+                    {row.bio || row.platform}
                   </p>
                 </div>
                 <Button
@@ -274,6 +312,31 @@ function SearchPage() {
                   ))}
                 </div>
               )}
+
+              {isAdmin && (
+                <div className="flex justify-end gap-1 border-t border-border pt-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditing(row);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <Pencil className="size-3.5" /> 수정
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => {
+                      if (confirm(`${row.account} 계정을 삭제할까요?`)) remove.mutate(row.id);
+                    }}
+                  >
+                    <Trash2 className="size-3.5" /> 삭제
+                  </Button>
+                </div>
+              )}
             </article>
           );
         })}
@@ -287,9 +350,14 @@ function SearchPage() {
 
       <InfluencerFormDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSubmit={handleCreate}
+        onOpenChange={(o) => {
+          setDialogOpen(o);
+          if (!o) setEditing(null);
+        }}
+        row={editing}
+        onSubmit={handleSubmit}
       />
+
     </div>
   );
 }

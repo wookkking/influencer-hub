@@ -137,7 +137,7 @@ function BoardPage() {
                       <div className="min-w-0">
                         <p className="truncate font-medium">{row.influencer?.account}</p>
                         <p className="text-xs text-muted-foreground">
-                          {row.influencer?.brand ?? row.influencer?.platform}
+                          {row.influencer?.platform}
                         </p>
                       </div>
                     </div>

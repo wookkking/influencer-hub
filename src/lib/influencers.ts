@@ -78,7 +78,6 @@ const optionalUrl = z
   .or(z.literal(""));
 
 export const influencerSchema = z.object({
-  brand: z.string().trim().max(60).optional().or(z.literal("")),
   platform: z.enum(PLATFORMS),
   account: z.string().trim().min(1, "계정을 입력하세요").max(80),
   photo_url: optionalUrl,
@@ -99,7 +98,6 @@ const numOrNull = (v: string | undefined) =>
 
 export function toInfluencerRow(values: InfluencerFormValues) {
   return {
-    brand: nullIfEmpty(values.brand),
     platform: values.platform,
     account: values.account,
     photo_url: nullIfEmpty(values.photo_url),
@@ -115,7 +113,6 @@ export function toInfluencerRow(values: InfluencerFormValues) {
 
 export function toInfluencerForm(row?: Influencer | null): InfluencerFormValues {
   return {
-    brand: row?.brand ?? "",
     platform: (row?.platform as InfluencerFormValues["platform"]) ?? "인스타",
     account: row?.account ?? "",
     photo_url: row?.photo_url ?? "",
@@ -204,7 +201,7 @@ export async function fetchDirectory(filters: DirectoryFilters): Promise<Influen
 
   if (filters.q.trim()) {
     const term = `%${filters.q.trim()}%`;
-    query = query.or(`account.ilike.${term},brand.ilike.${term},bio.ilike.${term}`);
+    query = query.or(`account.ilike.${term},bio.ilike.${term}`);
   }
   if (filters.platform !== "전체") query = query.eq("platform", filters.platform);
   if (filters.categories.length) query = query.overlaps("categories", filters.categories);
