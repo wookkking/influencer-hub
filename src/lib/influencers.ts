@@ -98,7 +98,6 @@ const numOrNull = (v: string | undefined) =>
 
 export function toInfluencerRow(values: InfluencerFormValues) {
   return {
-    brand: nullIfEmpty(values.brand),
     platform: values.platform,
     account: values.account,
     photo_url: nullIfEmpty(values.photo_url),
@@ -114,7 +113,6 @@ export function toInfluencerRow(values: InfluencerFormValues) {
 
 export function toInfluencerForm(row?: Influencer | null): InfluencerFormValues {
   return {
-    brand: row?.brand ?? "",
     platform: (row?.platform as InfluencerFormValues["platform"]) ?? "인스타",
     account: row?.account ?? "",
     photo_url: row?.photo_url ?? "",

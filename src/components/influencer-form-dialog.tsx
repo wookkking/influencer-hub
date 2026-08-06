@@ -109,10 +109,7 @@ export function InfluencerFormDialog({ open, onOpenChange, row, onSubmit }: Prop
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="brand">브랜드 / 소속</Label>
-              <Input id="brand" {...form.register("brand")} />
-            </div>
-            <div className="space-y-1.5">
+
               <Label htmlFor="last_post_date">최근 업로드일</Label>
               <Input id="last_post_date" type="date" {...form.register("last_post_date")} />
             </div>
