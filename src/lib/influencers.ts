@@ -78,7 +78,6 @@ const optionalUrl = z
   .or(z.literal(""));
 
 export const influencerSchema = z.object({
-  brand: z.string().trim().max(60).optional().or(z.literal("")),
   platform: z.enum(PLATFORMS),
   account: z.string().trim().min(1, "계정을 입력하세요").max(80),
   photo_url: optionalUrl,
