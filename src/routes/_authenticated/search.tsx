@@ -2,9 +2,18 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Bookmark, BookmarkCheck, ExternalLink, Plus, Search } from "lucide-react";
+import {
+  Bookmark,
+  BookmarkCheck,
+  ExternalLink,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 
 import { useSessionUser } from "@/hooks/use-session-user";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -20,13 +29,16 @@ import {
   CATEGORIES,
   PLATFORMS,
   createInfluencer,
+  deleteInfluencer,
   engagement,
   fetchDirectory,
   fetchSaved,
   nf,
   saveInfluencer,
   unsaveInfluencer,
+  updateInfluencer,
   type DirectoryFilters,
+  type Influencer,
   type InfluencerFormValues,
 } from "@/lib/influencers";
 
