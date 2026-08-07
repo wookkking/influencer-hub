@@ -25,6 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { InfluencerFormDialog } from "@/components/influencer-form-dialog";
+import { InfluencerAvatar } from "@/components/influencer-avatar";
+
 import {
   CATEGORIES,
   PLATFORMS,
