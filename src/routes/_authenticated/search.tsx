@@ -369,7 +369,7 @@ function SearchPage() {
       <InstagramImportDialog
         open={importOpen}
         onOpenChange={setImportOpen}
-        onDone={() => qc.invalidateQueries({ queryKey: ["directory"] })}
+        onDone={() => queryClient.invalidateQueries({ queryKey: ["directory"] })}
       />
 
     </div>
