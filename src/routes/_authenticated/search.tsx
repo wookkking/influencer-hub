@@ -10,6 +10,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Download,
 } from "lucide-react";
 
 import { useSessionUser } from "@/hooks/use-session-user";
@@ -26,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { InfluencerFormDialog } from "@/components/influencer-form-dialog";
 import { InfluencerAvatar } from "@/components/influencer-avatar";
+import { InstagramImportDialog } from "@/components/instagram-import-dialog";
 
 import {
   CATEGORIES,
@@ -83,6 +85,7 @@ function SearchPage() {
   const [sort, setSort] = useState<DirectoryFilters["sort"]>("followers");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Influencer | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const range = FOLLOWER_RANGES[rangeIdx]!;
   const filters: DirectoryFilters = {
@@ -361,6 +364,12 @@ function SearchPage() {
         }}
         row={editing}
         onSubmit={handleSubmit}
+      />
+
+      <InstagramImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onDone={() => qc.invalidateQueries({ queryKey: ["directory"] })}
       />
 
     </div>
