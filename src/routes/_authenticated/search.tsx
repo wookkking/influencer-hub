@@ -25,6 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { InfluencerFormDialog } from "@/components/influencer-form-dialog";
+import { InfluencerAvatar } from "@/components/influencer-avatar";
+
 import {
   CATEGORIES,
   PLATFORMS,
@@ -242,18 +244,11 @@ function SearchPage() {
               className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-sm"
             >
               <div className="flex items-start gap-3">
-                {row.photo_url ? (
-                  <img
-                    src={row.photo_url}
-                    alt={`${row.account} 프로필 사진`}
-                    loading="lazy"
-                    className="size-11 shrink-0 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">
-                    {row.account.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
+                <InfluencerAvatar
+                  account={row.account}
+                  photoUrl={row.photo_url}
+                  className="size-11 text-sm"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <p className="truncate text-sm font-semibold">{row.account}</p>
@@ -268,10 +263,15 @@ function SearchPage() {
                       </a>
                     )}
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {row.bio || row.platform}
-                  </p>
+                  {row.bio ? (
+                    <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                      {row.bio}
+                    </p>
+                  ) : (
+                    <p className="truncate text-xs text-muted-foreground/70">{row.platform}</p>
+                  )}
                 </div>
+
                 <Button
                   size="icon"
                   variant={isSaved ? "secondary" : "ghost"}

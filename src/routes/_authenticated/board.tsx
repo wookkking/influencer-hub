@@ -3,7 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 
+import { InfluencerAvatar } from "@/components/influencer-avatar";
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -122,24 +124,18 @@ function BoardPage() {
                 <tr key={row.id} className="border-b border-border/60 last:border-0">
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
-                      {row.influencer?.photo_url ? (
-                        <img
-                          src={row.influencer.photo_url}
-                          alt={`${row.influencer.account} 프로필 사진`}
-                          loading="lazy"
-                          className="size-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex size-8 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold">
-                          {row.influencer?.account.slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
+                      <InfluencerAvatar
+                        account={row.influencer?.account ?? ""}
+                        photoUrl={row.influencer?.photo_url ?? null}
+                        className="size-8 text-[11px]"
+                      />
                       <div className="min-w-0">
                         <p className="truncate font-medium">{row.influencer?.account}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {row.influencer?.platform}
+                        <p className="truncate text-xs text-muted-foreground">
+                          {row.influencer?.bio || row.influencer?.platform}
                         </p>
                       </div>
+
                     </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5">
