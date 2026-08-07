@@ -150,14 +150,19 @@ function SearchPage() {
           </p>
         </div>
         {isAdmin && (
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="size-4" /> 인플루언서 등록
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Download className="size-4" /> 인스타 가져오기
+            </Button>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="size-4" /> 인플루언서 등록
+            </Button>
+          </div>
         )}
       </div>
 
