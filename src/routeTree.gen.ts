@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
 import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
+import { Route as ApiPublicRefreshInstagramRouteImport } from './routes/api/public/refresh-instagram'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -39,18 +40,26 @@ const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
   path: '/search',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicRefreshInstagramRoute =
+  ApiPublicRefreshInstagramRouteImport.update({
+    id: '/api/public/refresh-instagram',
+    path: '/api/public/refresh-instagram',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/board': typeof AuthenticatedBoardRoute
   '/search': typeof AuthenticatedSearchRoute
+  '/api/public/refresh-instagram': typeof ApiPublicRefreshInstagramRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/board': typeof AuthenticatedBoardRoute
   '/search': typeof AuthenticatedSearchRoute
+  '/api/public/refresh-instagram': typeof ApiPublicRefreshInstagramRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -59,12 +68,14 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/board': typeof AuthenticatedBoardRoute
   '/_authenticated/search': typeof AuthenticatedSearchRoute
+  '/api/public/refresh-instagram': typeof ApiPublicRefreshInstagramRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/board' | '/search'
+  fullPaths:
+    '/' | '/auth' | '/board' | '/search' | '/api/public/refresh-instagram'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/board' | '/search'
+  to: '/' | '/auth' | '/board' | '/search' | '/api/public/refresh-instagram'
   id:
     | '__root__'
     | '/'
@@ -72,12 +83,14 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/board'
     | '/_authenticated/search'
+    | '/api/public/refresh-instagram'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicRefreshInstagramRoute: typeof ApiPublicRefreshInstagramRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -117,6 +130,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSearchRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/refresh-instagram': {
+      id: '/api/public/refresh-instagram'
+      path: '/api/public/refresh-instagram'
+      fullPath: '/api/public/refresh-instagram'
+      preLoaderRoute: typeof ApiPublicRefreshInstagramRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -137,17 +157,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicRefreshInstagramRoute: ApiPublicRefreshInstagramRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
