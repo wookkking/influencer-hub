@@ -28,6 +28,7 @@ export type Database = {
           followers: number
           id: string
           last_post_date: string | null
+          last_synced_at: string | null
           photo_url: string | null
           platform: string
           profile_url: string | null
@@ -47,6 +48,7 @@ export type Database = {
           followers?: number
           id?: string
           last_post_date?: string | null
+          last_synced_at?: string | null
           photo_url?: string | null
           platform?: string
           profile_url?: string | null
@@ -66,6 +68,7 @@ export type Database = {
           followers?: number
           id?: string
           last_post_date?: string | null
+          last_synced_at?: string | null
           photo_url?: string | null
           platform?: string
           profile_url?: string | null
