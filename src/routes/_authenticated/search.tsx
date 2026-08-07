@@ -10,6 +10,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Download,
 } from "lucide-react";
 
 import { useSessionUser } from "@/hooks/use-session-user";
@@ -26,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { InfluencerFormDialog } from "@/components/influencer-form-dialog";
 import { InfluencerAvatar } from "@/components/influencer-avatar";
+import { InstagramImportDialog } from "@/components/instagram-import-dialog";
 
 import {
   CATEGORIES,
@@ -83,6 +85,7 @@ function SearchPage() {
   const [sort, setSort] = useState<DirectoryFilters["sort"]>("followers");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Influencer | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const range = FOLLOWER_RANGES[rangeIdx]!;
   const filters: DirectoryFilters = {
@@ -150,14 +153,19 @@ function SearchPage() {
           </p>
         </div>
         {isAdmin && (
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="size-4" /> 인플루언서 등록
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Download className="size-4" /> 인스타 가져오기
+            </Button>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="size-4" /> 인플루언서 등록
+            </Button>
+          </div>
         )}
       </div>
 
@@ -356,6 +364,12 @@ function SearchPage() {
         }}
         row={editing}
         onSubmit={handleSubmit}
+      />
+
+      <InstagramImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onDone={() => queryClient.invalidateQueries({ queryKey: ["directory"] })}
       />
 
     </div>
