@@ -1,4 +1,4 @@
-import { auth, defineMcp } from "@lovable.dev/mcp-js";
+import { auth, defineMcp, type McpDefinitionInput } from "@lovable.dev/mcp-js";
 import searchInfluencers from "./tools/search-influencers";
 import listSavedInfluencers from "./tools/list-saved-influencers";
 import saveInfluencer from "./tools/save-influencer";
@@ -23,5 +23,5 @@ export default defineMcp({
     saveInfluencer,
     updateSavedInfluencer,
     removeSavedInfluencer,
-  ],
+  ] as unknown as McpDefinitionInput["tools"],
 });
