@@ -12,6 +12,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: (s: Record<string, unknown>) => {
+    const next = typeof s['next'] === "string" ? s['next'] : "";
+    return { next: next.startsWith("/") && !next.startsWith("//") ? next : "" };
+  },
   head: () => ({
     meta: [
       { title: "로그인 · 리치보드 인플루언서 검색" },
@@ -32,6 +36,10 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  const returnTo = next
+    ? new URL(next, window.location.origin).toString()
+    : window.location.origin;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -39,13 +47,19 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/search", replace: true });
+      if (data.session) {
+        if (next) window.location.replace(next);
+        else navigate({ to: "/search", replace: true });
+      }
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) navigate({ to: "/search", replace: true });
+      if (session) {
+        if (next) window.location.replace(next);
+        else navigate({ to: "/search", replace: true });
+      }
     });
     return () => sub.subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, next]);
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
@@ -61,7 +75,7 @@ function AuthPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: returnTo },
     });
     setBusy(false);
     if (error) toast.error(error.message);
@@ -70,7 +84,7 @@ function AuthPage() {
 
   async function google() {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: returnTo,
     });
     if (result.error) toast.error("구글 로그인에 실패했습니다");
   }

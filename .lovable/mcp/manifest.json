@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://jvwsidnneqcoorjdmwvb.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "influencer-hub",
+      "version": "0.1.0",
+      "title": "Influencer Hub"
+    },
+    "tools": [
+      {
+        "name": "search_influencers",
+        "title": "Search influencers",
+        "description": "Search the shared influencer directory by keyword, platform, category and follower range.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Keyword matched against account name and bio."
+            },
+            "platform": {
+              "type": "string",
+              "description": "Platform name, e.g. 인스타, 유튜브, 틱톡, 블로그."
+            },
+            "category": {
+              "type": "string",
+              "description": "Category tag, e.g. 뷰티, 패션, 푸드."
+            },
+            "min_followers": {
+              "type": "number"
+            },
+            "max_followers": {
+              "type": "number"
+            },
+            "sort": {
+              "type": "string",
+              "enum": [
+                "followers",
+                "recent"
+              ],
+              "description": "Default: followers."
+            },
+            "limit": {
+              "type": "number",
+              "description": "Max rows to return (default 20, max 100)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_saved_influencers",
+        "title": "List my campaign list",
+        "description": "List the signed-in user's saved influencers with campaign status (contact, reply, contract, upload results).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "contact_status": {
+              "type": "string",
+              "description": "Filter by contact status, e.g. 미컨택, 컨택완료, 보류."
+            },
+            "limit": {
+              "type": "number",
+              "description": "Max rows to return (default 50, max 200)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "save_influencer",
+        "title": "Save influencer to my list",
+        "description": "Add a directory influencer to the signed-in user's campaign list.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "influencer_id": {
+              "type": "string",
+              "description": "The influencer id returned by search_influencers."
+            },
+            "memo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "influencer_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_saved_influencer",
+        "title": "Update campaign status",
+        "description": "Update campaign progress fields on one of the signed-in user's saved influencers.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "saved_id": {
+              "type": "string",
+              "description": "The saved_influencers row id from list_saved_influencers."
+            },
+            "contact_status": {
+              "type": "string",
+              "description": "미컨택, 컨택완료, or 보류."
+            },
+            "contact_date": {
+              "type": "string",
+              "description": "YYYY-MM-DD."
+            },
+            "reply_status": {
+              "type": "string",
+              "description": "대기, 답변완료, or 거절."
+            },
+            "terms_status": {
+              "type": "string",
+              "description": "미정, 협의중, or 협의완료."
+            },
+            "contract_sent": {
+              "type": "boolean"
+            },
+            "contract_returned": {
+              "type": "boolean"
+            },
+            "content_draft": {
+              "type": "boolean"
+            },
+            "upload_date": {
+              "type": "string",
+              "description": "YYYY-MM-DD."
+            },
+            "upload_link": {
+              "type": "string"
+            },
+            "views": {
+              "type": "number"
+            },
+            "result_likes": {
+              "type": "number"
+            },
+            "result_comments": {
+              "type": "number"
+            },
+            "memo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "saved_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "remove_saved_influencer",
+        "title": "Remove from my list",
+        "description": "Remove an influencer from the signed-in user's campaign list.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "saved_id": {
+              "type": "string",
+              "description": "The saved_influencers row id from list_saved_influencers."
+            }
+          },
+          "required": [
+            "saved_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
