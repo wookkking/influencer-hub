@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, ExternalLink } from "lucide-react";
+import { CheckCircle2, ChevronRight, Circle, ExternalLink } from "lucide-react";
 
 import { InfluencerAvatar } from "@/components/influencer-avatar";
 import { Badge } from "@/components/ui/badge";
@@ -62,10 +62,32 @@ export function CampaignInfluencerRow({
   }, [recordKey]);
 
   const live = { ...record, ...perf };
+  const done = record.completed;
   const num = (v: string) => (v === "" ? null : Number(v));
 
   return (
-    <div className="grid grid-cols-[minmax(180px,1.6fr)_repeat(3,minmax(88px,0.8fr))_repeat(3,minmax(72px,0.7fr))_32px] items-center gap-2 border-b border-border px-3 py-2 text-xs transition-colors last:border-b-0 hover:bg-muted/40">
+    <div
+      className={
+        "grid grid-cols-[28px_minmax(170px,1.6fr)_repeat(3,minmax(88px,0.8fr))_repeat(3,minmax(72px,0.7fr))_32px] items-center gap-2 border-b border-border px-3 py-2 text-xs transition-colors last:border-b-0 hover:bg-muted/40 " +
+        (done ? "bg-emerald-500/[0.06]" : "")
+      }
+    >
+      <button
+        type="button"
+        aria-label={done ? "완료 해제" : "완료로 표시"}
+        title={done ? "완료 해제" : "완료로 표시"}
+        onClick={() =>
+          onPatch({ completed: !done, completed_at: !done ? new Date().toISOString() : null })
+        }
+        className={
+          "flex size-6 items-center justify-center rounded-md transition-colors " +
+          (done
+            ? "text-emerald-600 dark:text-emerald-400"
+            : "text-muted-foreground hover:text-foreground")
+        }
+      >
+        {done ? <CheckCircle2 className="size-4" /> : <Circle className="size-4" />}
+      </button>
       <div className="flex min-w-0 items-center gap-2">
         <InfluencerAvatar
           photoUrl={influencer?.photo_url ?? null}
@@ -77,7 +99,10 @@ export function CampaignInfluencerRow({
             <button
               type="button"
               onClick={onOpenDetail}
-              className="truncate font-medium hover:underline"
+              className={
+                "truncate font-medium hover:underline " +
+                (done ? "text-muted-foreground line-through decoration-1" : "")
+              }
             >
               @{influencer?.account}
             </button>
@@ -95,6 +120,11 @@ export function CampaignInfluencerRow({
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <span className="tabular">팔로워 {nf.format(followers)}</span>
+            {done && (
+              <Badge className="h-4 border-emerald-500/30 bg-emerald-500/15 px-1.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
+                완료
+              </Badge>
+            )}
             {scopeLabel && (
               <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
                 {scopeLabel}
