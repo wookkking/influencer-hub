@@ -70,8 +70,78 @@ export const Route = createFileRoute("/_authenticated/board")({
 
 function BoardPage() {
   const queryClient = useQueryClient();
+  const { user } = useSessionUser();
   const saved = useQuery({ queryKey: ["saved"], queryFn: fetchSaved });
-  const rows = saved.data ?? [];
+  const campaigns = useQuery({ queryKey: ["campaigns"], queryFn: fetchCampaigns });
+  const members = useQuery({ queryKey: ["campaign-members"], queryFn: fetchCampaignMembers });
+
+  const allRows = saved.data ?? [];
+  const groups = campaigns.data ?? [];
+  const memberRows = members.data ?? [];
+
+  const [active, setActive] = useState<string>("all");
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState<string>("default");
+  const [open, setOpen] = useState(false);
+
+  const bySaved = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const m of memberRows) {
+      map.set(m.saved_influencer_id, [
+        ...(map.get(m.saved_influencer_id) ?? []),
+        m.campaign_id,
+      ]);
+    }
+    return map;
+  }, [memberRows]);
+
+  const rows = useMemo(() => {
+    if (active === "all") return allRows;
+    if (active === "none") return allRows.filter((r) => !(bySaved.get(r.id) ?? []).length);
+    return allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(active));
+  }, [allRows, active, bySaved]);
+
+  async function refreshGroups() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] }),
+      queryClient.invalidateQueries({ queryKey: ["campaign-members"] }),
+    ]);
+  }
+
+  async function addCampaign() {
+    if (!user || !newName.trim()) return;
+    try {
+      await createCampaign(newName.trim(), newColor, user.id);
+      setNewName("");
+      setNewColor("default");
+      setOpen(false);
+      await refreshGroups();
+      toast.success("캠페인 그룹을 만들었습니다");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "캠페인 생성에 실패했습니다");
+    }
+  }
+
+  async function removeCampaign(id: string) {
+    try {
+      await deleteCampaign(id);
+      if (active === id) setActive("all");
+      await refreshGroups();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "삭제에 실패했습니다");
+    }
+  }
+
+  async function toggleMember(savedId: string, campaignId: string, next: boolean) {
+    if (!user) return;
+    try {
+      if (next) await addToCampaign(campaignId, savedId, user.id);
+      else await removeFromCampaign(campaignId, savedId);
+      await queryClient.invalidateQueries({ queryKey: ["campaign-members"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "그룹 변경에 실패했습니다");
+    }
+  }
 
   async function patch(id: string, values: Record<string, unknown>) {
     try {
@@ -91,13 +161,96 @@ function BoardPage() {
   const replied = rows.filter((r) => r.reply_status === "답변완료").length;
   const uploaded = rows.filter((r) => r.upload_date).length;
 
+  const countFor = (id: string) =>
+    id === "all"
+      ? allRows.length
+      : id === "none"
+        ? allRows.filter((r) => !(bySaved.get(r.id) ?? []).length).length
+        : allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(id)).length;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">내 캠페인</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          저장한 인플루언서의 진행 상황을 관리합니다. 변경 사항은 즉시 저장돼요.
+          저장한 인플루언서를 캠페인 그룹으로 묶어 관리합니다. 한 명이 여러 캠페인에 동시에 속할 수
+          있어요.
         </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {[
+          { id: "all", name: "전체", color: "default" },
+          { id: "none", name: "미분류", color: "default" },
+          ...groups,
+        ].map((g) => (
+          <div key={g.id} className="group relative">
+            <button
+              type="button"
+              onClick={() => setActive(g.id)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors",
+                active === g.id
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : (colorClass[g.color] ?? colorClass['default']) + " hover:opacity-80",
+              )}
+            >
+              <span className="max-w-[160px] truncate">{g.name}</span>
+              <span className="tabular opacity-70">{countFor(g.id)}</span>
+            </button>
+            {g.id !== "all" && g.id !== "none" && (
+              <button
+                type="button"
+                aria-label={`${g.name} 그룹 삭제`}
+                onClick={() => removeCampaign(g.id)}
+                className="absolute -right-1.5 -top-1.5 hidden size-4 items-center justify-center rounded-full border border-border bg-background text-muted-foreground group-hover:flex"
+              >
+                <X className="size-2.5" />
+              </button>
+            )}
+          </div>
+        ))}
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline" className="h-8 rounded-full text-xs">
+              <Plus className="size-3.5" /> 캠페인 그룹
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>새 캠페인 그룹</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Input
+                placeholder="예: 3월 신제품 런칭"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+              <div className="flex flex-wrap gap-2">
+                {CAMPAIGN_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setNewColor(c)}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-[11px] capitalize",
+                      colorClass[c],
+                      newColor === c && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                    )}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={addCampaign} disabled={!newName.trim()}>
+                만들기
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-4">
@@ -116,15 +269,18 @@ function BoardPage() {
 
       {rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
-          아직 저장한 인플루언서가 없습니다. 탐색 화면에서 북마크를 눌러 추가해 보세요.
+          {allRows.length === 0
+            ? "아직 저장한 인플루언서가 없습니다. 탐색 화면에서 북마크를 눌러 추가해 보세요."
+            : "이 그룹에 속한 인플루언서가 없습니다."}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
-          <table className="w-full min-w-[1100px] text-sm">
+          <table className="w-full min-w-[1280px] text-sm">
             <thead className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
               <tr>
                 {[
                   "인플루언서",
+                  "캠페인 그룹",
                   "팔로워/참여율",
                   "컨택",
                   "답변",
