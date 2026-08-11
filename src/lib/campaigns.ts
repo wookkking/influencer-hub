@@ -13,6 +13,21 @@ export type CampaignMember = {
   id: string;
   campaign_id: string;
   saved_influencer_id: string;
+  contact_status: string;
+  contact_date: string | null;
+  contact_note: string | null;
+  reply_status: string;
+  reply_date: string | null;
+  reply_note: string | null;
+  terms_note: string | null;
+  contract_sent: boolean;
+  contract_returned: boolean;
+  upload_date: string | null;
+  upload_link: string | null;
+  views: number | null;
+  result_likes: number | null;
+  result_comments: number | null;
+  memo: string | null;
 };
 
 export const CAMPAIGN_COLORS = [
@@ -43,12 +58,19 @@ export async function fetchCampaigns(): Promise<Campaign[]> {
 }
 
 export async function fetchCampaignMembers(): Promise<CampaignMember[]> {
-  const { data, error } = await supabase
-    .from("campaign_members")
-    .select("id, campaign_id, saved_influencer_id");
+  const { data, error } = await supabase.from("campaign_members").select("*");
   if (error) throw error;
   return (data ?? []) as unknown as CampaignMember[];
 }
+
+export async function updateCampaignMember(id: string, patch: Record<string, unknown>) {
+  const { error } = await supabase
+    .from("campaign_members")
+    .update(patch as never)
+    .eq("id", id);
+  if (error) throw error;
+}
+
 
 export async function createCampaign(name: string, color: string, userId: string) {
   const { error } = await supabase

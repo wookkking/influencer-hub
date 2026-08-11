@@ -17,24 +17,72 @@ export type Database = {
       campaign_members: {
         Row: {
           campaign_id: string
+          contact_date: string | null
+          contact_note: string | null
+          contact_status: string
+          contract_returned: boolean
+          contract_sent: boolean
           created_at: string
           id: string
+          memo: string | null
+          reply_date: string | null
+          reply_note: string | null
+          reply_status: string
+          result_comments: number | null
+          result_likes: number | null
           saved_influencer_id: string
+          terms_note: string | null
+          updated_at: string
+          upload_date: string | null
+          upload_link: string | null
           user_id: string
+          views: number | null
         }
         Insert: {
           campaign_id: string
+          contact_date?: string | null
+          contact_note?: string | null
+          contact_status?: string
+          contract_returned?: boolean
+          contract_sent?: boolean
           created_at?: string
           id?: string
+          memo?: string | null
+          reply_date?: string | null
+          reply_note?: string | null
+          reply_status?: string
+          result_comments?: number | null
+          result_likes?: number | null
           saved_influencer_id: string
+          terms_note?: string | null
+          updated_at?: string
+          upload_date?: string | null
+          upload_link?: string | null
           user_id: string
+          views?: number | null
         }
         Update: {
           campaign_id?: string
+          contact_date?: string | null
+          contact_note?: string | null
+          contact_status?: string
+          contract_returned?: boolean
+          contract_sent?: boolean
           created_at?: string
           id?: string
+          memo?: string | null
+          reply_date?: string | null
+          reply_note?: string | null
+          reply_status?: string
+          result_comments?: number | null
+          result_likes?: number | null
           saved_influencer_id?: string
+          terms_note?: string | null
+          updated_at?: string
+          upload_date?: string | null
+          upload_link?: string | null
           user_id?: string
+          views?: number | null
         }
         Relationships: [
           {
@@ -149,6 +197,7 @@ export type Database = {
       saved_influencers: {
         Row: {
           contact_date: string | null
+          contact_note: string | null
           contact_status: string
           content_draft: boolean
           contract_returned: boolean
@@ -158,9 +207,11 @@ export type Database = {
           influencer_id: string
           memo: string | null
           reply_date: string | null
+          reply_note: string | null
           reply_status: string
           result_comments: number | null
           result_likes: number | null
+          terms_note: string | null
           terms_status: string
           updated_at: string
           upload_date: string | null
@@ -170,6 +221,7 @@ export type Database = {
         }
         Insert: {
           contact_date?: string | null
+          contact_note?: string | null
           contact_status?: string
           content_draft?: boolean
           contract_returned?: boolean
@@ -179,9 +231,11 @@ export type Database = {
           influencer_id: string
           memo?: string | null
           reply_date?: string | null
+          reply_note?: string | null
           reply_status?: string
           result_comments?: number | null
           result_likes?: number | null
+          terms_note?: string | null
           terms_status?: string
           updated_at?: string
           upload_date?: string | null
@@ -191,6 +245,7 @@ export type Database = {
         }
         Update: {
           contact_date?: string | null
+          contact_note?: string | null
           contact_status?: string
           content_draft?: boolean
           contract_returned?: boolean
@@ -200,9 +255,11 @@ export type Database = {
           influencer_id?: string
           memo?: string | null
           reply_date?: string | null
+          reply_note?: string | null
           reply_status?: string
           result_comments?: number | null
           result_likes?: number | null
+          terms_note?: string | null
           terms_status?: string
           updated_at?: string
           upload_date?: string | null

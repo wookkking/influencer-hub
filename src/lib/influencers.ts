@@ -26,9 +26,12 @@ export type SavedInfluencer = {
   influencer_id: string;
   contact_status: string;
   contact_date: string | null;
+  contact_note: string | null;
   reply_status: string;
   reply_date: string | null;
+  reply_note: string | null;
   terms_status: string;
+  terms_note: string | null;
   contract_sent: boolean;
   contract_returned: boolean;
   content_draft: boolean;
@@ -40,6 +43,48 @@ export type SavedInfluencer = {
   memo: string | null;
   created_at: string;
 };
+
+/** 진행 상황 기록 단위 — 내 리스트 기본값 또는 캠페인(프로젝트)별 기록 */
+export type TrackRecord = {
+  contact_status: string;
+  contact_date: string | null;
+  contact_note: string | null;
+  reply_status: string;
+  reply_date: string | null;
+  reply_note: string | null;
+  terms_note: string | null;
+  contract_sent: boolean;
+  contract_returned: boolean;
+  upload_date: string | null;
+  upload_link: string | null;
+  views: number | null;
+  result_likes: number | null;
+  result_comments: number | null;
+  memo: string | null;
+};
+
+/** 조회수 ÷ 팔로워 (도달률) */
+export function reachRate(views: number | null, followers: number) {
+  if (!followers || !views) return null;
+  return (views / followers) * 100;
+}
+
+/** (좋아요 + 댓글) ÷ 조회수 (반응률) */
+export function viewReactionRate(r: Pick<TrackRecord, "views" | "result_likes" | "result_comments">) {
+  if (!r.views) return null;
+  return (((r.result_likes ?? 0) + (r.result_comments ?? 0)) / r.views) * 100;
+}
+
+/** (좋아요 + 댓글) ÷ 팔로워 (팔로워 대비 반응률) */
+export function followerReactionRate(
+  r: Pick<TrackRecord, "result_likes" | "result_comments">,
+  followers: number,
+) {
+  if (!followers) return null;
+  const sum = (r.result_likes ?? 0) + (r.result_comments ?? 0);
+  if (!sum) return null;
+  return (sum / followers) * 100;
+}
 
 export type SavedWithInfluencer = SavedInfluencer & { influencer: Influencer };
 

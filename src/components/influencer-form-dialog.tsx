@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
 import {
@@ -41,7 +40,6 @@ type Props = {
 
 export function InfluencerFormDialog({ open, onOpenChange, row, onSubmit }: Props) {
   const form = useForm<InfluencerFormValues>({
-    resolver: zodResolver(influencerSchema),
     defaultValues: toInfluencerForm(row),
   });
 
@@ -58,14 +56,32 @@ export function InfluencerFormDialog({ open, onOpenChange, row, onSubmit }: Prop
     form.setValue("categories", next, { shouldDirty: true });
   }
 
-  const submit = form.handleSubmit(async (values) => {
+  const submit = form.handleSubmit(async (raw) => {
+    const parsed = influencerSchema.safeParse(raw);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      const path = first?.path?.[0];
+      if (typeof path === "string") {
+        form.setError(path as keyof InfluencerFormValues, {
+          message: first?.message ?? "입력값을 확인해 주세요",
+        });
+      }
+      toast.error(first?.message ?? "입력값을 확인해 주세요");
+      return;
+    }
     try {
-      await onSubmit(values);
+      await onSubmit(parsed.data);
       onOpenChange(false);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "저장에 실패했습니다");
+      const message = e instanceof Error ? e.message : "저장에 실패했습니다";
+      toast.error(
+        message.includes("duplicate key") || message.includes("unique")
+          ? "이미 등록된 계정입니다"
+          : message,
+      );
     }
   });
+
 
   const err = form.formState.errors;
 
