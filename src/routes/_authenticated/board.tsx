@@ -111,10 +111,21 @@ function BoardPage() {
   }, [memberRows]);
 
   const rows = useMemo(() => {
-    if (active === "all") return allRows;
-    if (active === "none") return allRows.filter((r) => !(bySaved.get(r.id) ?? []).length);
-    return allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(active));
-  }, [allRows, active, bySaved]);
+    const scoped =
+      active === "all"
+        ? allRows
+        : active === "none"
+          ? allRows.filter((r) => !(bySaved.get(r.id) ?? []).length)
+          : allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(active));
+    const term = q.trim().toLowerCase();
+    if (!term) return scoped;
+    return scoped.filter((r) =>
+      [r.influencer?.account, r.influencer?.bio, r.memo, r.contact_note, r.terms_note]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(term)),
+    );
+  }, [allRows, active, bySaved, q]);
+
 
   const activeGroup = groups.find((g) => g.id === active) ?? null;
   const scopeLabel = activeGroup ? `${activeGroup.name} 기록` : "기본 기록";
