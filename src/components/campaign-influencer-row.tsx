@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { ChevronRight, ExternalLink } from "lucide-react";
 
 import { InfluencerAvatar } from "@/components/influencer-avatar";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,8 @@ type Props = {
   /** 여러 캠페인을 모아볼 때 어느 캠페인의 기록인지 표시 */
   scopeLabel?: string | null;
   onPatch: (values: Record<string, unknown>) => void | Promise<void>;
+  /** 카드처럼 눌러 상세 정보를 여는 핸들러 */
+  onOpenDetail?: () => void;
 };
 
 function pct(v: number | null) {
@@ -41,6 +43,7 @@ export function CampaignInfluencerRow({
   record,
   scopeLabel,
   onPatch,
+  onOpenDetail,
 }: Props) {
   const followers = influencer?.followers ?? 0;
   const [perf, setPerf] = useState({
@@ -62,7 +65,7 @@ export function CampaignInfluencerRow({
   const num = (v: string) => (v === "" ? null : Number(v));
 
   return (
-    <div className="grid grid-cols-[minmax(180px,1.6fr)_repeat(3,minmax(88px,0.8fr))_repeat(3,minmax(72px,0.7fr))] items-center gap-2 border-b border-border px-3 py-2 text-xs last:border-b-0 hover:bg-muted/40">
+    <div className="grid grid-cols-[minmax(180px,1.6fr)_repeat(3,minmax(88px,0.8fr))_repeat(3,minmax(72px,0.7fr))_32px] items-center gap-2 border-b border-border px-3 py-2 text-xs transition-colors last:border-b-0 hover:bg-muted/40">
       <div className="flex min-w-0 items-center gap-2">
         <InfluencerAvatar
           photoUrl={influencer?.photo_url ?? null}
@@ -71,7 +74,13 @@ export function CampaignInfluencerRow({
         />
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="truncate font-medium">@{influencer?.account}</span>
+            <button
+              type="button"
+              onClick={onOpenDetail}
+              className="truncate font-medium hover:underline"
+            >
+              @{influencer?.account}
+            </button>
             {influencer?.profile_url && (
               <a
                 href={influencer.profile_url}
@@ -153,6 +162,18 @@ export function CampaignInfluencerRow({
         <div className="text-muted-foreground">{pct(reachRate(live.views, followers))}</div>
         <div className="text-muted-foreground">{pct(followerReactionRate(live, followers))}</div>
       </div>
+      {onOpenDetail ? (
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          aria-label={`@${influencer?.account} 상세 보기`}
+          className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <ChevronRight className="size-4" />
+        </button>
+      ) : (
+        <span />
+      )}
     </div>
   );
 }
