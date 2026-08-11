@@ -68,6 +68,16 @@ export const Route = createFileRoute("/_authenticated/board")({
   component: BoardPage,
 });
 
+/** 반응률 = (좋아요 + 댓글) ÷ 조회수 × 100 */
+function resultRate(row: {
+  views: number | null;
+  result_likes: number | null;
+  result_comments: number | null;
+}) {
+  if (!row.views) return null;
+  return (((row.result_likes ?? 0) + (row.result_comments ?? 0)) / row.views) * 100;
+}
+
 function BoardPage() {
   const queryClient = useQueryClient();
   const { user } = useSessionUser();
