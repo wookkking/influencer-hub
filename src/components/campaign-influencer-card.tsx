@@ -1,4 +1,5 @@
-import { ExternalLink, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, ExternalLink, Loader2, Trash2 } from "lucide-react";
 
 import { InfluencerAvatar } from "@/components/influencer-avatar";
 import { CampaignPicker } from "@/components/campaign-picker";
@@ -36,7 +37,7 @@ type Props = {
   campaigns: Campaign[];
   selectedCampaignIds: string[];
   onToggleCampaign: (campaignId: string, next: boolean) => void;
-  onPatch: (values: Record<string, unknown>) => void;
+  onPatch: (values: Record<string, unknown>) => void | Promise<void>;
   onRemove: () => void;
 };
 
@@ -56,16 +57,46 @@ export function CampaignInfluencerCard({
   onRemove,
 }: Props) {
   const followers = influencer?.followers ?? 0;
+
+  // 성과 입력은 로컬 상태로 두어 타이핑 즉시 지표가 계산되도록 한다 (저장은 onBlur)
+  const [perf, setPerf] = useState({
+    views: record.views,
+    result_likes: record.result_likes,
+    result_comments: record.result_comments,
+  });
+  const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
+
+  useEffect(() => {
+    setPerf({
+      views: record.views,
+      result_likes: record.result_likes,
+      result_comments: record.result_comments,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recordKey]);
+
+  async function save(values: Record<string, unknown>) {
+    setStatus("saving");
+    try {
+      await onPatch(values);
+      setStatus("saved");
+    } catch {
+      setStatus("idle");
+    }
+  }
+
+  const live = { ...record, ...perf };
   const metrics = [
-    { label: "도달률 (조회수÷팔로워)", value: pct(reachRate(record.views, followers)) },
-    { label: "반응률 (좋아요+댓글÷조회수)", value: pct(viewReactionRate(record)) },
+    { label: "도달률 (조회수÷팔로워)", value: pct(reachRate(live.views, followers)) },
+    { label: "반응률 (좋아요+댓글÷조회수)", value: pct(viewReactionRate(live)) },
     {
       label: "팔로워 대비 반응률",
-      value: pct(followerReactionRate(record, followers)),
+      value: pct(followerReactionRate(live, followers)),
     },
   ];
 
   const num = (v: string) => (v ? Number(v) : null);
+
 
   return (
     <article className="rounded-2xl border border-border bg-card p-5 shadow-sm">
