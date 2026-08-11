@@ -13,6 +13,21 @@ export type CampaignMember = {
   id: string;
   campaign_id: string;
   saved_influencer_id: string;
+  contact_status: string;
+  contact_date: string | null;
+  contact_note: string | null;
+  reply_status: string;
+  reply_date: string | null;
+  reply_note: string | null;
+  terms_note: string | null;
+  contract_sent: boolean;
+  contract_returned: boolean;
+  upload_date: string | null;
+  upload_link: string | null;
+  views: number | null;
+  result_likes: number | null;
+  result_comments: number | null;
+  memo: string | null;
 };
 
 export const CAMPAIGN_COLORS = [
