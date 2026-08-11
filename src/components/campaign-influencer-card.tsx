@@ -267,34 +267,28 @@ export function CampaignInfluencerCard({
         <section className="space-y-2 lg:col-span-2">
           <Label className="text-xs text-muted-foreground">성과</Label>
           <div className="grid gap-3 sm:grid-cols-3">
-            <Input
-              key={`${recordKey}-views`}
-              type="number"
-              placeholder="조회수"
-              aria-label="조회수"
-              className="h-9"
-              defaultValue={record.views ?? ""}
-              onBlur={(e) => save({ views: num(e.target.value) })}
-            />
-            <Input
-              key={`${recordKey}-likes`}
-              type="number"
-              placeholder="좋아요"
-              aria-label="좋아요"
-              className="h-9"
-              defaultValue={record.result_likes ?? ""}
-              onBlur={(e) => save({ result_likes: num(e.target.value) })}
-            />
-            <Input
-              key={`${recordKey}-comments`}
-              type="number"
-              placeholder="댓글"
-              aria-label="댓글"
-              className="h-9"
-              defaultValue={record.result_comments ?? ""}
-              onBlur={(e) => save({ result_comments: num(e.target.value) })}
-            />
+            {(
+              [
+                { field: "views", label: "조회수" },
+                { field: "result_likes", label: "좋아요" },
+                { field: "result_comments", label: "댓글" },
+              ] as const
+            ).map(({ field, label }) => (
+              <Input
+                key={field}
+                type="number"
+                placeholder={label}
+                aria-label={label}
+                className="h-9"
+                value={perf[field] ?? ""}
+                onChange={(e) =>
+                  setPerf((p) => ({ ...p, [field]: num(e.target.value) }))
+                }
+                onBlur={(e) => save({ [field]: num(e.target.value) })}
+              />
+            ))}
           </div>
+
           <div className="grid gap-2 sm:grid-cols-3">
             {metrics.map((m) => (
               <div key={m.label} className="rounded-lg border border-border bg-muted/30 px-3 py-2">
