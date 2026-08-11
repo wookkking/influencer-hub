@@ -316,6 +316,13 @@ function BoardPage() {
 
                     </div>
                   </td>
+                  <td className="px-3 py-2.5">
+                    <CampaignPicker
+                      campaigns={groups}
+                      selectedIds={bySaved.get(row.id) ?? []}
+                      onToggle={(cid, next) => toggleMember(row.id, cid, next)}
+                    />
+                  </td>
                   <td className="whitespace-nowrap px-3 py-2.5">
                     <p className="tabular">{nf.format(row.influencer?.followers ?? 0)}</p>
                     <Badge variant="outline" className="mt-0.5 text-[11px]">
