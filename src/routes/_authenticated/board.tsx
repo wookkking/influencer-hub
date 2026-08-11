@@ -150,9 +150,9 @@ function BoardPage() {
       return entries;
     };
 
-    if (selectedIds.length > 0) {
-      return groups
-        .filter((g) => selectedIds.includes(g.id))
+    const groupSections = (ids: string[]) =>
+      groups
+        .filter((g) => ids.includes(g.id))
         .map((g) => ({
           id: g.id,
           title: g.name,
@@ -162,23 +162,36 @@ function BoardPage() {
             g,
           ),
         }));
+
+    if (selectedIds.length > 0) return groupSections(selectedIds);
+
+    const unassigned = allRows.filter((r) => !(bySaved.get(r.id) ?? []).length);
+
+    if (active === "none") {
+      return [
+        { id: "none", title: "미분류", color: "default", entries: build(unassigned, null) },
+      ];
     }
 
-    const scoped =
-      active === "none" ? allRows.filter((r) => !(bySaved.get(r.id) ?? []).length) : allRows;
+    // 전체 보기도 캠페인 그룹별 섹션으로 나눠 보여준다
     return [
-      {
-        id: active,
-        title: active === "none" ? "미분류" : "전체",
-        color: "default",
-        entries: build(scoped, null),
-      },
-    ];
+      ...groupSections(groups.map((g) => g.id)),
+      { id: "none", title: "미분류", color: "default", entries: build(unassigned, null) },
+    ].filter((s) => s.entries.length > 0 || s.id !== "none");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allRows, groups, memberOf, bySaved, active, selectedIds, term]);
 
+
   const entries = useMemo(() => sections.flatMap((s) => s.entries), [sections]);
   const multi = selectedIds.length > 1;
+
+  const [detail, setDetail] = useState<{ sectionId: string; rowId: string } | null>(null);
+  const detailEntry = useMemo(() => {
+    if (!detail) return null;
+    const section = sections.find((s) => s.id === detail.sectionId);
+    return section?.entries.find((e) => e.row.id === detail.rowId) ?? null;
+  }, [detail, sections]);
+
 
 
   async function refreshGroups() {
@@ -491,21 +504,17 @@ function BoardPage() {
         <div className="space-y-8">
           {sections.map((section) => (
             <section key={section.id} className="space-y-3">
-              {selectedIds.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "rounded-full border px-3 py-1 text-xs",
-                      colorClass[section.color] ?? colorClass['default'],
-                    )}
-                  >
-                    {section.title}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {section.entries.length}명
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs",
+                    colorClass[section.color] ?? colorClass['default'],
+                  )}
+                >
+                  {section.title}
+                </span>
+                <span className="text-xs text-muted-foreground">{section.entries.length}명</span>
+              </div>
 
               {section.entries.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
@@ -513,7 +522,7 @@ function BoardPage() {
                 </p>
               ) : view === "compact" ? (
                 <div className="overflow-hidden rounded-xl border border-border bg-card">
-                  <div className="grid grid-cols-[minmax(180px,1.6fr)_repeat(3,minmax(88px,0.8fr))_repeat(3,minmax(72px,0.7fr))] gap-2 border-b border-border bg-muted/50 px-3 py-2 text-[11px] font-medium text-muted-foreground">
+                  <div className="grid grid-cols-[minmax(180px,1.6fr)_repeat(3,minmax(88px,0.8fr))_repeat(3,minmax(72px,0.7fr))_32px] gap-2 border-b border-border bg-muted/50 px-3 py-2 text-[11px] font-medium text-muted-foreground">
                     <span>인플루언서</span>
                     <span>컨택</span>
                     <span>답변</span>
@@ -521,6 +530,7 @@ function BoardPage() {
                     <span>좋아요</span>
                     <span>댓글</span>
                     <span className="text-right">반응/도달/팔로워</span>
+                    <span />
                   </div>
                   {section.entries.map((e) => (
                     <CampaignInfluencerRow
@@ -528,8 +538,9 @@ function BoardPage() {
                       recordKey={e.key}
                       influencer={e.row.influencer ?? null}
                       record={e.record}
-                      scopeLabel={multi ? e.groupName : null}
+                      scopeLabel={null}
                       onPatch={(values) => patch(e.row, e.memberId, values)}
+                      onOpenDetail={() => setDetail({ sectionId: section.id, rowId: e.row.id })}
                     />
                   ))}
                 </div>
@@ -555,7 +566,35 @@ function BoardPage() {
           ))}
         </div>
       )}
+
+      <Dialog open={!!detailEntry} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              @{detailEntry?.row.influencer?.account}
+              {detailEntry?.groupName ? ` · ${detailEntry.groupName}` : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {detailEntry && (
+            <CampaignInfluencerCard
+              recordKey={detailEntry.key}
+              influencer={detailEntry.row.influencer ?? null}
+              record={detailEntry.record}
+              scopeLabel={detailEntry.groupName ? `${detailEntry.groupName} 기록` : "기본 기록"}
+              campaigns={groups}
+              selectedCampaignIds={bySaved.get(detailEntry.row.id) ?? []}
+              onToggleCampaign={(cid, next) => toggleMember(detailEntry.row.id, cid, next)}
+              onPatch={(values) => patch(detailEntry.row, detailEntry.memberId, values)}
+              onRemove={() => {
+                setDetail(null);
+                return remove(detailEntry.row.influencer_id);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
