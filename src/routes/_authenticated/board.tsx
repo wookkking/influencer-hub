@@ -91,7 +91,10 @@ function BoardPage() {
   const groups = campaigns.data ?? [];
   const memberRows = members.data ?? [];
 
-  const [active, setActive] = useState<string>("all");
+  /** "all" | "none" | 캠페인 id 배열(여러 캠페인 모아보기) */
+  const [active, setActive] = useState<"all" | "none">("all");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [view, setView] = useState<"detail" | "compact">("detail");
   const [q, setQ] = useState("");
 
   const [newName, setNewName] = useState("");
@@ -112,32 +115,70 @@ function BoardPage() {
     return map;
   }, [memberRows]);
 
-  const rows = useMemo(() => {
+  const term = q.trim().toLowerCase();
+  const matches = (row: SavedWithInfluencer, record: TrackRecord) =>
+    !term ||
+    [row.influencer?.account, row.influencer?.bio, record.memo, record.contact_note, record.terms_note]
+      .filter(Boolean)
+      .some((v) => String(v).toLowerCase().includes(term));
+
+  type Entry = {
+    row: SavedWithInfluencer;
+    record: TrackRecord;
+    memberId: string | null;
+    key: string;
+    groupName: string | null;
+  };
+
+  /** 선택 상태에 따라 (캠페인 × 인플루언서) 단위의 표시 목록을 만든다 */
+  const sections = useMemo(() => {
+    const build = (rowsIn: SavedWithInfluencer[], group: (typeof groups)[number] | null) => {
+      const entries: Entry[] = [];
+      for (const row of rowsIn) {
+        const member = group ? memberOf.get(`${group.id}:${row.id}`) : undefined;
+        const record = toRecord(member ?? row);
+        if (!matches(row, record)) continue;
+        entries.push({
+          row,
+          record,
+          memberId: member?.id ?? null,
+          key: member?.id ?? row.id,
+          groupName: group?.name ?? null,
+        });
+      }
+      return entries;
+    };
+
+    if (selectedIds.length > 0) {
+      return groups
+        .filter((g) => selectedIds.includes(g.id))
+        .map((g) => ({
+          id: g.id,
+          title: g.name,
+          color: g.color,
+          entries: build(
+            allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(g.id)),
+            g,
+          ),
+        }));
+    }
+
     const scoped =
-      active === "all"
-        ? allRows
-        : active === "none"
-          ? allRows.filter((r) => !(bySaved.get(r.id) ?? []).length)
-          : allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(active));
-    const term = q.trim().toLowerCase();
-    if (!term) return scoped;
-    return scoped.filter((r) =>
-      [r.influencer?.account, r.influencer?.bio, r.memo, r.contact_note, r.terms_note]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(term)),
-    );
-  }, [allRows, active, bySaved, q]);
+      active === "none" ? allRows.filter((r) => !(bySaved.get(r.id) ?? []).length) : allRows;
+    return [
+      {
+        id: active,
+        title: active === "none" ? "미분류" : "전체",
+        color: "default",
+        entries: build(scoped, null),
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allRows, groups, memberOf, bySaved, active, selectedIds, term]);
 
+  const entries = useMemo(() => sections.flatMap((s) => s.entries), [sections]);
+  const multi = selectedIds.length > 1;
 
-  const activeGroup = groups.find((g) => g.id === active) ?? null;
-  const scopeLabel = activeGroup ? `${activeGroup.name} 기록` : "기본 기록";
-
-  /** 활성 캠페인이면 캠페인별 기록, 아니면 내 리스트 기본 기록 */
-  function recordFor(row: SavedWithInfluencer) {
-    const member = activeGroup ? memberOf.get(`${activeGroup.id}:${row.id}`) : undefined;
-    if (member) return { key: member.id, record: toRecord(member), memberId: member.id };
-    return { key: row.id, record: toRecord(row), memberId: null as string | null };
-  }
 
   async function refreshGroups() {
     await Promise.all([
