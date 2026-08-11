@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, ExternalLink, Loader2, Trash2 } from "lucide-react";
+import { Check, CheckCircle2, Circle, ExternalLink, Loader2, Trash2 } from "lucide-react";
 
 import { InfluencerAvatar } from "@/components/influencer-avatar";
 import { CampaignPicker } from "@/components/campaign-picker";
@@ -96,10 +96,16 @@ export function CampaignInfluencerCard({
   ];
 
   const num = (v: string) => (v ? Number(v) : null);
+  const done = record.completed;
 
 
   return (
-    <article className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <article
+      className={
+        "rounded-2xl border bg-card p-5 shadow-sm transition-colors " +
+        (done ? "border-emerald-500/40 bg-emerald-500/[0.04]" : "border-border")
+      }
+    >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border/60 pb-4">
         <div className="flex min-w-0 items-center gap-3">
           <InfluencerAvatar
@@ -145,6 +151,21 @@ export function CampaignInfluencerCard({
           <Badge variant="secondary" className="text-[11px] font-normal">
             {scopeLabel}
           </Badge>
+
+          <Button
+            size="sm"
+            variant={done ? "default" : "outline"}
+            className={
+              "h-8 gap-1.5 text-xs " +
+              (done ? "bg-emerald-600 text-white hover:bg-emerald-600/90" : "")
+            }
+            onClick={() =>
+              save({ completed: !done, completed_at: !done ? new Date().toISOString() : null })
+            }
+          >
+            {done ? <CheckCircle2 className="size-3.5" /> : <Circle className="size-3.5" />}
+            {done ? "완료됨" : "완료 처리"}
+          </Button>
 
           <CampaignPicker
             campaigns={campaigns}
