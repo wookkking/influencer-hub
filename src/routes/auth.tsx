@@ -12,9 +12,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  validateSearch: (s: Record<string, unknown>) => {
+  validateSearch: (s: Record<string, unknown>): { next?: string } => {
     const next = typeof s['next'] === "string" ? s['next'] : "";
-    return { next: next.startsWith("/") && !next.startsWith("//") ? next : "" };
+    return next.startsWith("/") && !next.startsWith("//") ? { next } : {};
   },
   head: () => ({
     meta: [
