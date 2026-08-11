@@ -150,7 +150,7 @@ export function CampaignInfluencerCard({
             <Label className="w-16 shrink-0 text-xs text-muted-foreground">컨택</Label>
             <Select
               value={record.contact_status}
-              onValueChange={(v) => onPatch({ contact_status: v })}
+              onValueChange={(v) => save({ contact_status: v })}
             >
               <SelectTrigger className="h-9 w-[120px]">
                 <SelectValue />
@@ -167,7 +167,7 @@ export function CampaignInfluencerCard({
               type="date"
               className="h-9 flex-1"
               value={record.contact_date ?? ""}
-              onChange={(e) => onPatch({ contact_date: e.target.value || null })}
+              onChange={(e) => save({ contact_date: e.target.value || null })}
             />
           </div>
           <Textarea
@@ -175,7 +175,7 @@ export function CampaignInfluencerCard({
             rows={3}
             placeholder="컨택 내용을 자유롭게 적어주세요 (보낸 제안, 채널, 담당자 등)"
             defaultValue={record.contact_note ?? ""}
-            onBlur={(e) => onPatch({ contact_note: e.target.value || null })}
+            onBlur={(e) => save({ contact_note: e.target.value || null })}
           />
         </section>
 
@@ -185,7 +185,7 @@ export function CampaignInfluencerCard({
             <Label className="w-16 shrink-0 text-xs text-muted-foreground">답변</Label>
             <Select
               value={record.reply_status}
-              onValueChange={(v) => onPatch({ reply_status: v })}
+              onValueChange={(v) => save({ reply_status: v })}
             >
               <SelectTrigger className="h-9 w-[120px]">
                 <SelectValue />
@@ -202,7 +202,7 @@ export function CampaignInfluencerCard({
               type="date"
               className="h-9 flex-1"
               value={record.reply_date ?? ""}
-              onChange={(e) => onPatch({ reply_date: e.target.value || null })}
+              onChange={(e) => save({ reply_date: e.target.value || null })}
             />
           </div>
           <Textarea
@@ -210,7 +210,7 @@ export function CampaignInfluencerCard({
             rows={3}
             placeholder="답변 내용 (회신 요약, 요청 사항 등)"
             defaultValue={record.reply_note ?? ""}
-            onBlur={(e) => onPatch({ reply_note: e.target.value || null })}
+            onBlur={(e) => save({ reply_note: e.target.value || null })}
           />
         </section>
 
@@ -222,7 +222,7 @@ export function CampaignInfluencerCard({
             rows={4}
             placeholder="예: 릴스 1편 + 스토리 2회, 원고료 150만원(VAT 별도), 2차 활용 3개월, 업로드 후 30일 유지"
             defaultValue={record.terms_note ?? ""}
-            onBlur={(e) => onPatch({ terms_note: e.target.value || null })}
+            onBlur={(e) => save({ terms_note: e.target.value || null })}
           />
         </section>
 
@@ -233,14 +233,14 @@ export function CampaignInfluencerCard({
             <label className="flex items-center gap-1.5">
               <Checkbox
                 checked={record.contract_sent}
-                onCheckedChange={(c) => onPatch({ contract_sent: !!c })}
+                onCheckedChange={(c) => save({ contract_sent: !!c })}
               />
               계약서 발송
             </label>
             <label className="flex items-center gap-1.5">
               <Checkbox
                 checked={record.contract_returned}
-                onCheckedChange={(c) => onPatch({ contract_returned: !!c })}
+                onCheckedChange={(c) => save({ contract_returned: !!c })}
               />
               계약서 회수
             </label>
@@ -251,14 +251,14 @@ export function CampaignInfluencerCard({
               aria-label="업로드일"
               className="h-9 w-[160px]"
               value={record.upload_date ?? ""}
-              onChange={(e) => onPatch({ upload_date: e.target.value || null })}
+              onChange={(e) => save({ upload_date: e.target.value || null })}
             />
             <Input
               key={`${recordKey}-upload_link`}
               placeholder="업로드 링크"
               className="h-9 flex-1"
               defaultValue={record.upload_link ?? ""}
-              onBlur={(e) => onPatch({ upload_link: e.target.value || null })}
+              onBlur={(e) => save({ upload_link: e.target.value || null })}
             />
           </div>
         </section>
@@ -274,7 +274,7 @@ export function CampaignInfluencerCard({
               aria-label="조회수"
               className="h-9"
               defaultValue={record.views ?? ""}
-              onBlur={(e) => onPatch({ views: num(e.target.value) })}
+              onBlur={(e) => save({ views: num(e.target.value) })}
             />
             <Input
               key={`${recordKey}-likes`}
@@ -283,7 +283,7 @@ export function CampaignInfluencerCard({
               aria-label="좋아요"
               className="h-9"
               defaultValue={record.result_likes ?? ""}
-              onBlur={(e) => onPatch({ result_likes: num(e.target.value) })}
+              onBlur={(e) => save({ result_likes: num(e.target.value) })}
             />
             <Input
               key={`${recordKey}-comments`}
@@ -292,7 +292,7 @@ export function CampaignInfluencerCard({
               aria-label="댓글"
               className="h-9"
               defaultValue={record.result_comments ?? ""}
-              onBlur={(e) => onPatch({ result_comments: num(e.target.value) })}
+              onBlur={(e) => save({ result_comments: num(e.target.value) })}
             />
           </div>
           <div className="grid gap-2 sm:grid-cols-3">
@@ -313,7 +313,7 @@ export function CampaignInfluencerCard({
             rows={5}
             placeholder="진행하며 남길 내용을 자유롭게 기록하세요."
             defaultValue={record.memo ?? ""}
-            onBlur={(e) => onPatch({ memo: e.target.value || null })}
+            onBlur={(e) => save({ memo: e.target.value || null })}
           />
         </section>
       </div>
