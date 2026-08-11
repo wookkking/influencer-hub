@@ -73,7 +73,12 @@ export function InfluencerFormDialog({ open, onOpenChange, row, onSubmit }: Prop
       await onSubmit(parsed.data);
       onOpenChange(false);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "저장에 실패했습니다";
+      const message =
+        e instanceof Error
+          ? e.message
+          : typeof e === "object" && e && "message" in e
+            ? String((e as { message: unknown }).message)
+            : "저장에 실패했습니다";
       toast.error(
         message.includes("duplicate key") || message.includes("unique")
           ? "이미 등록된 계정입니다"
