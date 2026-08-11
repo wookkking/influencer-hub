@@ -185,6 +185,14 @@ function BoardPage() {
   const entries = useMemo(() => sections.flatMap((s) => s.entries), [sections]);
   const multi = selectedIds.length > 1;
 
+  const [detail, setDetail] = useState<{ sectionId: string; rowId: string } | null>(null);
+  const detailEntry = useMemo(() => {
+    if (!detail) return null;
+    const section = sections.find((s) => s.id === detail.sectionId);
+    return section?.entries.find((e) => e.row.id === detail.rowId) ?? null;
+  }, [detail, sections]);
+
+
 
   async function refreshGroups() {
     await Promise.all([
