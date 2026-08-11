@@ -11,7 +11,11 @@ import {
   Search,
   Trash2,
   Download,
+  Users,
+  Sparkles,
+  X,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import { useSessionUser } from "@/hooks/use-session-user";
 import { useIsAdmin } from "@/hooks/use-is-admin";
@@ -196,6 +200,31 @@ function SearchPage() {
 
   const rows = directory.data ?? [];
 
+  const activeFilters = [
+    q.trim() ? { key: "q", label: `"${q.trim()}"`, clear: () => setQ("") } : null,
+    platform !== "전체" ? { key: "p", label: platform, clear: () => setPlatform("전체") } : null,
+    rangeIdx !== 0
+      ? { key: "r", label: `팔로워 ${range.label}`, clear: () => setRangeIdx(0) }
+      : null,
+    ...cats.map((c) => ({
+      key: `c-${c}`,
+      label: c,
+      clear: () => setCats((prev) => prev.filter((x) => x !== c)),
+    })),
+  ].filter(Boolean) as { key: string; label: string; clear: () => void }[];
+
+  const resetAll = () => {
+    setQ("");
+    setPlatform("전체");
+    setCats([]);
+    setRangeIdx(0);
+  };
+
+  const totalReach = rows.reduce((a, r) => a + r.followers, 0);
+  const avgEngagement = rows.length
+    ? rows.reduce((a, r) => a + engagement(r), 0) / rows.length
+    : 0;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -222,20 +251,30 @@ function SearchPage() {
         )}
       </div>
 
-
-      <div className="space-y-4 rounded-xl border border-border bg-card p-4">
+      {/* 필터 바 — 스크롤해도 상단에 고정되어 조건 변경이 쉽다 */}
+      <div className="sticky top-2 z-20 space-y-3 rounded-2xl border border-border bg-card/95 p-4 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="flex flex-wrap gap-2">
-          <div className="relative min-w-[220px] flex-1">
+          <div className="relative min-w-[240px] flex-1">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="pl-9"
+              className="h-10 pl-9"
               placeholder="계정, 소개 검색"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
+            {q && (
+              <button
+                type="button"
+                aria-label="검색어 지우기"
+                onClick={() => setQ("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
           <Select value={platform} onValueChange={setPlatform}>
-            <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="h-10 w-[130px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -248,19 +287,19 @@ function SearchPage() {
             </SelectContent>
           </Select>
           <Select value={String(rangeIdx)} onValueChange={(v) => setRangeIdx(Number(v))}>
-            <SelectTrigger className="w-[130px]">
+            <SelectTrigger className="h-10 w-[140px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {FOLLOWER_RANGES.map((r, i) => (
                 <SelectItem key={r.label} value={String(i)}>
-                  {r.label}
+                  {i === 0 ? "전체 팔로워" : r.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select value={sort} onValueChange={(v) => setSort(v as DirectoryFilters["sort"])}>
-            <SelectTrigger className="w-[130px]">
+            <SelectTrigger className="h-10 w-[140px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -271,149 +310,240 @@ function SearchPage() {
           </Select>
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {CATEGORIES.map((cat) => {
             const active = cats.includes(cat);
             return (
-              <Badge
+              <button
                 key={cat}
-                variant={active ? "default" : "outline"}
-                className="cursor-pointer select-none px-2.5 py-1 text-xs font-medium"
+                type="button"
+                aria-pressed={active}
                 onClick={() =>
                   setCats((prev) =>
                     prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
                   )
                 }
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                )}
               >
                 {cat}
-              </Badge>
+              </button>
             );
           })}
         </div>
+
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 border-t border-border/70 pt-3">
+            <span className="text-[11px] font-medium text-muted-foreground">적용된 조건</span>
+            {activeFilters.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={f.clear}
+                className="flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-secondary-foreground hover:opacity-80"
+              >
+                {f.label}
+                <X className="size-3" />
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={resetAll}
+              className="ml-1 text-[11px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              전체 초기화
+            </button>
+          </div>
+        )}
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        {directory.isLoading ? "불러오는 중…" : `${nf.format(rows.length)}명의 인플루언서`}
-      </p>
+      {/* 결과 요약 */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+        <span className="flex items-center gap-1.5 font-medium">
+          <Users className="size-4 text-muted-foreground" />
+          {directory.isLoading ? "불러오는 중…" : `${nf.format(rows.length)}명`}
+        </span>
+        {!directory.isLoading && rows.length > 0 && (
+          <>
+            <span className="text-muted-foreground">
+              총 도달 <span className="tabular font-medium text-foreground">{nf.format(totalReach)}</span>
+            </span>
+            <span className="text-muted-foreground">
+              평균 참여율{" "}
+              <span className="tabular font-medium text-accent">{avgEngagement.toFixed(2)}%</span>
+            </span>
+            <span className="ml-auto text-xs text-muted-foreground">
+              저장됨 {savedIds.size}명
+            </span>
+          </>
+        )}
+      </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {rows.map((row) => {
-          const isSaved = savedIds.has(row.id);
-          return (
-            <article
-              key={row.id}
-              className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-sm"
-            >
-              <div className="flex items-start gap-3">
-                <InfluencerAvatar
-                  account={row.account}
-                  photoUrl={row.photo_url}
-                  className="size-11 text-sm"
+      {directory.isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-56 animate-pulse rounded-2xl border border-border bg-muted/40"
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {rows.map((row) => {
+            const isSaved = savedIds.has(row.id);
+            const er = engagement(row);
+            const tier = er >= 3 ? "high" : er >= 1 ? "mid" : "low";
+            return (
+              <article
+                key={row.id}
+                className={cn(
+                  "group relative flex flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+                  isSaved ? "border-primary/40 ring-1 ring-primary/15" : "border-border",
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    "absolute inset-x-0 top-0 h-0.5 transition-opacity",
+                    isSaved ? "bg-primary opacity-100" : "bg-primary/50 opacity-0 group-hover:opacity-100",
+                  )}
                 />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <p className="truncate text-sm font-semibold">{row.account}</p>
-                    {row.profile_url && (
-                      <a
-                        href={row.profile_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`${row.account} 프로필 열기`}
-                      >
-                        <ExternalLink className="size-3.5 text-muted-foreground" />
-                      </a>
+                <div className="flex items-start gap-3">
+                  <InfluencerAvatar
+                    account={row.account}
+                    photoUrl={row.photo_url}
+                    className="size-12 text-sm ring-2 ring-background"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <p className="truncate text-sm font-semibold">{row.account}</p>
+                      {row.profile_url && (
+                        <a
+                          href={row.profile_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`${row.account} 프로필 열기`}
+                          className="text-muted-foreground transition-colors hover:text-primary"
+                        >
+                          <ExternalLink className="size-3.5" />
+                        </a>
+                      )}
+                    </div>
+                    {row.bio ? (
+                      <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                        {row.bio}
+                      </p>
+                    ) : (
+                      <p className="truncate text-xs text-muted-foreground/70">{row.platform}</p>
                     )}
                   </div>
-                  {row.bio ? (
-                    <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                      {row.bio}
+
+                  <Button
+                    size="icon"
+                    variant={isSaved ? "default" : "ghost"}
+                    className="shrink-0"
+                    aria-label={isSaved ? "리스트에서 제거" : "내 리스트에 저장"}
+                    title={isSaved ? "리스트에서 제거" : "내 리스트에 저장"}
+                    onClick={() => toggleSave.mutate(row.id)}
+                  >
+                    {isSaved ? (
+                      <BookmarkCheck className="size-4" />
+                    ) : (
+                      <Bookmark className="size-4" />
+                    )}
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-3 divide-x divide-border rounded-xl border border-border/70 bg-muted/40 py-2.5 text-center">
+                  <div>
+                    <p className="tabular text-sm font-semibold">{nf.format(row.followers)}</p>
+                    <p className="text-[11px] text-muted-foreground">팔로워</p>
+                  </div>
+                  <div>
+                    <p className="tabular text-sm font-semibold">{nf.format(row.avg_likes)}</p>
+                    <p className="text-[11px] text-muted-foreground">평균 좋아요</p>
+                  </div>
+                  <div>
+                    <p
+                      className={cn(
+                        "tabular flex items-center justify-center gap-1 text-sm font-semibold",
+                        tier === "high"
+                          ? "text-accent"
+                          : tier === "mid"
+                            ? "text-foreground"
+                            : "text-muted-foreground",
+                      )}
+                    >
+                      {tier === "high" && <Sparkles className="size-3" />}
+                      {er.toFixed(2)}%
                     </p>
-                  ) : (
-                    <p className="truncate text-xs text-muted-foreground/70">{row.platform}</p>
+                    <p className="text-[11px] text-muted-foreground">참여율</p>
+                  </div>
+                </div>
+
+                {row.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {row.categories.map((c) => (
+                      <Badge key={c} variant="outline" className="text-[11px] font-normal">
+                        {c}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                <div className="mt-auto space-y-2 border-t border-border/70 pt-3">
+                  <CampaignPicker
+                    campaigns={campaigns.data ?? []}
+                    selectedIds={groupsOf.get(row.id) ?? []}
+                    onToggle={(cid, next) => toggleGroup(row.id, cid, next)}
+                  />
+
+                  {isAdmin && (
+                    <div className="flex justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          setEditing(row);
+                          setDialogOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-3.5" /> 수정
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs text-destructive hover:text-destructive"
+                        onClick={() => {
+                          if (confirm(`${row.account} 계정을 삭제할까요?`)) remove.mutate(row.id);
+                        }}
+                      >
+                        <Trash2 className="size-3.5" /> 삭제
+                      </Button>
+                    </div>
                   )}
                 </div>
-
-                <Button
-                  size="icon"
-                  variant={isSaved ? "secondary" : "ghost"}
-                  aria-label={isSaved ? "리스트에서 제거" : "내 리스트에 저장"}
-                  onClick={() => toggleSave.mutate(row.id)}
-                >
-                  {isSaved ? (
-                    <BookmarkCheck className="size-4" />
-                  ) : (
-                    <Bookmark className="size-4" />
-                  )}
-                </Button>
-              </div>
-
-              <CampaignPicker
-                campaigns={campaigns.data ?? []}
-                selectedIds={groupsOf.get(row.id) ?? []}
-                onToggle={(cid, next) => toggleGroup(row.id, cid, next)}
-              />
-
-
-
-              <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted/50 p-2.5 text-center">
-                <div>
-                  <p className="tabular text-sm font-semibold">{nf.format(row.followers)}</p>
-                  <p className="text-[11px] text-muted-foreground">팔로워</p>
-                </div>
-                <div>
-                  <p className="tabular text-sm font-semibold">{nf.format(row.avg_likes)}</p>
-                  <p className="text-[11px] text-muted-foreground">평균 좋아요</p>
-                </div>
-                <div>
-                  <p className="tabular text-sm font-semibold text-accent">
-                    {engagement(row).toFixed(2)}%
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">참여율</p>
-                </div>
-              </div>
-
-              {row.categories.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {row.categories.map((c) => (
-                    <Badge key={c} variant="outline" className="text-[11px]">
-                      {c}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              {isAdmin && (
-                <div className="flex justify-end gap-1 border-t border-border pt-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setEditing(row);
-                      setDialogOpen(true);
-                    }}
-                  >
-                    <Pencil className="size-3.5" /> 수정
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => {
-                      if (confirm(`${row.account} 계정을 삭제할까요?`)) remove.mutate(row.id);
-                    }}
-                  >
-                    <Trash2 className="size-3.5" /> 삭제
-                  </Button>
-                </div>
-              )}
-            </article>
-          );
-        })}
-      </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
 
       {!directory.isLoading && rows.length === 0 && (
-        <div className="rounded-xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
-          조건에 맞는 인플루언서가 없습니다.
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-12 text-center">
+          <Search className="size-8 text-muted-foreground/50" />
+          <p className="text-sm text-muted-foreground">조건에 맞는 인플루언서가 없습니다.</p>
+          {activeFilters.length > 0 && (
+            <Button variant="outline" size="sm" onClick={resetAll}>
+              조건 초기화
+            </Button>
+          )}
         </div>
       )}
 
