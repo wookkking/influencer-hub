@@ -28,6 +28,13 @@ import {
 import { InfluencerFormDialog } from "@/components/influencer-form-dialog";
 import { InfluencerAvatar } from "@/components/influencer-avatar";
 import { InstagramImportDialog } from "@/components/instagram-import-dialog";
+import { CampaignPicker } from "@/components/campaign-picker";
+import {
+  addToCampaign,
+  fetchCampaignMembers,
+  fetchCampaigns,
+  removeFromCampaign,
+} from "@/lib/campaigns";
 
 import {
   CATEGORIES,
