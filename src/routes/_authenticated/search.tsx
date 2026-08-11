@@ -102,11 +102,51 @@ function SearchPage() {
     queryFn: () => fetchDirectory(filters),
   });
   const saved = useQuery({ queryKey: ["saved"], queryFn: fetchSaved });
+  const campaigns = useQuery({ queryKey: ["campaigns"], queryFn: fetchCampaigns });
+  const members = useQuery({ queryKey: ["campaign-members"], queryFn: fetchCampaignMembers });
 
   const savedIds = useMemo(
     () => new Set((saved.data ?? []).map((s) => s.influencer_id)),
     [saved.data],
   );
+
+  /** influencer_id → saved_influencers.id */
+  const savedRowId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of saved.data ?? []) map.set(s.influencer_id, s.id);
+    return map;
+  }, [saved.data]);
+
+  /** influencer_id → 속한 캠페인 그룹 id 목록 */
+  const groupsOf = useMemo(() => {
+    const bySavedId = new Map<string, string[]>();
+    for (const m of members.data ?? []) {
+      bySavedId.set(m.saved_influencer_id, [
+        ...(bySavedId.get(m.saved_influencer_id) ?? []),
+        m.campaign_id,
+      ]);
+    }
+    const map = new Map<string, string[]>();
+    for (const [infId, sid] of savedRowId) map.set(infId, bySavedId.get(sid) ?? []);
+    return map;
+  }, [members.data, savedRowId]);
+
+  async function toggleGroup(influencerId: string, campaignId: string, next: boolean) {
+    if (!user) return;
+    try {
+      let sid = savedRowId.get(influencerId);
+      if (!sid) sid = await saveInfluencer(influencerId, user.id);
+      if (next) await addToCampaign(campaignId, sid, user.id);
+      else await removeFromCampaign(campaignId, sid);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["saved"] }),
+        queryClient.invalidateQueries({ queryKey: ["campaign-members"] }),
+      ]);
+      toast.success(next ? "캠페인 그룹에 담았습니다" : "그룹에서 제외했습니다");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "그룹 변경에 실패했습니다");
+    }
+  }
 
   const toggleSave = useMutation({
     mutationFn: async (id: string) => {
@@ -114,9 +154,14 @@ function SearchPage() {
       if (savedIds.has(id)) await unsaveInfluencer(id);
       else await saveInfluencer(id, user.id);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["saved"] }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["saved"] }),
+        queryClient.invalidateQueries({ queryKey: ["campaign-members"] }),
+      ]),
     onError: (e) => toast.error(e instanceof Error ? e.message : "저장에 실패했습니다"),
   });
+
 
   const remove = useMutation({
     mutationFn: (id: string) => deleteInfluencer(id),
