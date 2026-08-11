@@ -347,6 +347,14 @@ function SearchPage() {
                 </Button>
               </div>
 
+              <CampaignPicker
+                campaigns={campaigns.data ?? []}
+                selectedIds={groupsOf.get(row.id) ?? []}
+                onToggle={(cid, next) => toggleGroup(row.id, cid, next)}
+              />
+
+
+
               <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted/50 p-2.5 text-center">
                 <div>
                   <p className="tabular text-sm font-semibold">{nf.format(row.followers)}</p>
