@@ -58,12 +58,19 @@ export async function fetchCampaigns(): Promise<Campaign[]> {
 }
 
 export async function fetchCampaignMembers(): Promise<CampaignMember[]> {
-  const { data, error } = await supabase
-    .from("campaign_members")
-    .select("id, campaign_id, saved_influencer_id");
+  const { data, error } = await supabase.from("campaign_members").select("*");
   if (error) throw error;
   return (data ?? []) as unknown as CampaignMember[];
 }
+
+export async function updateCampaignMember(id: string, patch: Record<string, unknown>) {
+  const { error } = await supabase
+    .from("campaign_members")
+    .update(patch as never)
+    .eq("id", id);
+  if (error) throw error;
+}
+
 
 export async function createCampaign(name: string, color: string, userId: string) {
   const { error } = await supabase
