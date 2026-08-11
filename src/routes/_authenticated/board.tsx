@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { List, Plus, Rows3, Search, X } from "lucide-react";
+import { CheckCircle2, List, Plus, RotateCcw, Rows3, Search, X } from "lucide-react";
 
 import { CampaignInfluencerCard } from "@/components/campaign-influencer-card";
 import { CampaignInfluencerRow } from "@/components/campaign-influencer-row";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useSessionUser } from "@/hooks/use-session-user";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import {
   CAMPAIGN_COLORS,
   addToCampaign,
@@ -28,6 +29,7 @@ import {
   fetchCampaignMembers,
   fetchCampaigns,
   removeFromCampaign,
+  setCampaignCompleted,
   updateCampaignMember,
   type CampaignMember,
 } from "@/lib/campaigns";
@@ -78,6 +80,7 @@ function toRecord(source: SavedWithInfluencer | CampaignMember): TrackRecord {
     result_likes: source.result_likes,
     result_comments: source.result_comments,
     memo: source.memo,
+    completed: source.completed,
   };
 }
 
@@ -93,9 +96,11 @@ function BoardPage() {
   const memberRows = members.data ?? [];
 
   /** "all" | "none" | 캠페인 id 배열(여러 캠페인 모아보기) */
-  const [active, setActive] = useState<"all" | "none">("all");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [view, setView] = useState<"detail" | "compact">("detail");
+  const [active, setActive] = usePersistedState<"all" | "none">("board:active", "all");
+  const [selectedIds, setSelectedIds] = usePersistedState<string[]>("board:selectedIds", []);
+  const [view, setView] = usePersistedState<"detail" | "compact">("board:view", "detail");
+  /** 진행 상태 분류: 진행중 / 완료 / 전체 */
+  const [phase, setPhase] = usePersistedState<"active" | "done" | "all">("board:phase", "active");
   const [q, setQ] = useState("");
 
   const [newName, setNewName] = useState("");
@@ -139,6 +144,10 @@ function BoardPage() {
         const member = group ? memberOf.get(`${group.id}:${row.id}`) : undefined;
         const record = toRecord(member ?? row);
         if (!matches(row, record)) continue;
+        const campaignDone = group?.completed ?? false;
+        const itemDone = record.completed || campaignDone;
+        if (phase === "active" && itemDone) continue;
+        if (phase === "done" && !itemDone) continue;
         entries.push({
           row,
           record,
@@ -157,6 +166,7 @@ function BoardPage() {
           id: g.id,
           title: g.name,
           color: g.color,
+          completed: g.completed,
           entries: build(
             allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(g.id)),
             g,
@@ -169,17 +179,33 @@ function BoardPage() {
 
     if (active === "none") {
       return [
-        { id: "none", title: "미분류", color: "default", entries: build(unassigned, null) },
+        {
+          id: "none",
+          title: "미분류",
+          color: "default",
+          completed: false,
+          entries: build(unassigned, null),
+        },
       ];
     }
 
     // 전체 보기도 캠페인 그룹별 섹션으로 나눠 보여준다
+    const visibleGroups = groups
+      .filter((g) => (phase === "active" ? !g.completed : phase === "done" ? true : true))
+      .sort((a, b) => Number(a.completed) - Number(b.completed));
+
     return [
-      ...groupSections(groups.map((g) => g.id)),
-      { id: "none", title: "미분류", color: "default", entries: build(unassigned, null) },
+      ...groupSections(visibleGroups.map((g) => g.id)),
+      {
+        id: "none",
+        title: "미분류",
+        color: "default",
+        completed: false,
+        entries: build(unassigned, null),
+      },
     ].filter((s) => s.entries.length > 0 || s.id !== "none");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allRows, groups, memberOf, bySaved, active, selectedIds, term]);
+  }, [allRows, groups, memberOf, bySaved, active, selectedIds, term, phase]);
 
 
   const entries = useMemo(() => sections.flatMap((s) => s.entries), [sections]);
@@ -212,6 +238,16 @@ function BoardPage() {
       toast.success("캠페인 그룹을 만들었습니다");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "캠페인 생성에 실패했습니다");
+    }
+  }
+
+  async function toggleCampaignDone(id: string, next: boolean) {
+    try {
+      await setCampaignCompleted(id, next);
+      await refreshGroups();
+      toast.success(next ? "완료된 캠페인으로 이동했습니다" : "진행중으로 되돌렸습니다");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "변경에 실패했습니다");
     }
   }
 
