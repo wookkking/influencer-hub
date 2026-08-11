@@ -65,7 +65,7 @@ export function CampaignInfluencerRow({
     <div className="grid grid-cols-[minmax(180px,1.6fr)_repeat(3,minmax(88px,0.8fr))_repeat(3,minmax(72px,0.7fr))] items-center gap-2 border-b border-border px-3 py-2 text-xs last:border-b-0 hover:bg-muted/40">
       <div className="flex min-w-0 items-center gap-2">
         <InfluencerAvatar
-          src={influencer?.photo_url ?? null}
+          photoUrl={influencer?.photo_url ?? null}
           account={influencer?.account ?? ""}
           className="size-8"
         />
