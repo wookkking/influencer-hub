@@ -42,7 +42,7 @@ import {
   CONTACT_STATUS,
   REPLY_STATUS,
   TERMS_STATUS,
-  engagement,
+  
   fetchSaved,
   nf,
   unsaveInfluencer,
@@ -67,6 +67,16 @@ export const Route = createFileRoute("/_authenticated/board")({
   }),
   component: BoardPage,
 });
+
+/** 반응률 = (좋아요 + 댓글) ÷ 조회수 × 100 */
+function resultRate(row: {
+  views: number | null;
+  result_likes: number | null;
+  result_comments: number | null;
+}) {
+  if (!row.views) return null;
+  return (((row.result_likes ?? 0) + (row.result_comments ?? 0)) / row.views) * 100;
+}
 
 function BoardPage() {
   const queryClient = useQueryClient();
@@ -281,13 +291,12 @@ function BoardPage() {
                 {[
                   "인플루언서",
                   "캠페인 그룹",
-                  "팔로워/참여율",
                   "컨택",
                   "답변",
                   "조건",
                   "계약",
                   "업로드",
-                  "성과",
+                  "성과 (조회수·좋아요·댓글·반응률)",
                   "메모",
                   "",
                 ].map((h) => (
@@ -322,12 +331,6 @@ function BoardPage() {
                       selectedIds={bySaved.get(row.id) ?? []}
                       onToggle={(cid, next) => toggleMember(row.id, cid, next)}
                     />
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2.5">
-                    <p className="tabular">{nf.format(row.influencer?.followers ?? 0)}</p>
-                    <Badge variant="outline" className="mt-0.5 text-[11px]">
-                      {row.influencer ? engagement(row.influencer).toFixed(2) : "0.00"}%
-                    </Badge>
                   </td>
                   <td className="px-3 py-2.5">
                     <Select
@@ -409,17 +412,45 @@ function BoardPage() {
                     />
                   </td>
                   <td className="px-3 py-2.5">
-                    <Input
-                      type="number"
-                      placeholder="조회수"
-                      className="h-8 w-[100px]"
-                      defaultValue={row.views ?? ""}
-                      onBlur={(e) =>
-                        patch(row.id, {
-                          views: e.target.value ? Number(e.target.value) : null,
-                        })
-                      }
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        type="number"
+                        placeholder="조회수"
+                        aria-label="조회수"
+                        className="h-8 w-[92px]"
+                        defaultValue={row.views ?? ""}
+                        onBlur={(e) =>
+                          patch(row.id, { views: e.target.value ? Number(e.target.value) : null })
+                        }
+                      />
+                      <Input
+                        type="number"
+                        placeholder="좋아요"
+                        aria-label="좋아요"
+                        className="h-8 w-[88px]"
+                        defaultValue={row.result_likes ?? ""}
+                        onBlur={(e) =>
+                          patch(row.id, {
+                            result_likes: e.target.value ? Number(e.target.value) : null,
+                          })
+                        }
+                      />
+                      <Input
+                        type="number"
+                        placeholder="댓글"
+                        aria-label="댓글"
+                        className="h-8 w-[80px]"
+                        defaultValue={row.result_comments ?? ""}
+                        onBlur={(e) =>
+                          patch(row.id, {
+                            result_comments: e.target.value ? Number(e.target.value) : null,
+                          })
+                        }
+                      />
+                      <Badge variant="outline" className="tabular whitespace-nowrap text-[11px]">
+                        {resultRate(row) == null ? "–" : `${resultRate(row)!.toFixed(2)}%`}
+                      </Badge>
+                    </div>
                   </td>
                   <td className="px-3 py-2.5">
                     <Input
