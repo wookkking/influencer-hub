@@ -2,9 +2,10 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Search, X } from "lucide-react";
+import { List, Plus, Rows3, Search, X } from "lucide-react";
 
 import { CampaignInfluencerCard } from "@/components/campaign-influencer-card";
+import { CampaignInfluencerRow } from "@/components/campaign-influencer-row";
 import { PerformanceChart, type PerfPoint } from "@/components/performance-chart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
