@@ -150,9 +150,9 @@ function BoardPage() {
       return entries;
     };
 
-    if (selectedIds.length > 0) {
-      return groups
-        .filter((g) => selectedIds.includes(g.id))
+    const groupSections = (ids: string[]) =>
+      groups
+        .filter((g) => ids.includes(g.id))
         .map((g) => ({
           id: g.id,
           title: g.name,
@@ -162,20 +162,25 @@ function BoardPage() {
             g,
           ),
         }));
+
+    if (selectedIds.length > 0) return groupSections(selectedIds);
+
+    const unassigned = allRows.filter((r) => !(bySaved.get(r.id) ?? []).length);
+
+    if (active === "none") {
+      return [
+        { id: "none", title: "미분류", color: "default", entries: build(unassigned, null) },
+      ];
     }
 
-    const scoped =
-      active === "none" ? allRows.filter((r) => !(bySaved.get(r.id) ?? []).length) : allRows;
+    // 전체 보기도 캠페인 그룹별 섹션으로 나눠 보여준다
     return [
-      {
-        id: active,
-        title: active === "none" ? "미분류" : "전체",
-        color: "default",
-        entries: build(scoped, null),
-      },
-    ];
+      ...groupSections(groups.map((g) => g.id)),
+      { id: "none", title: "미분류", color: "default", entries: build(unassigned, null) },
+    ].filter((s) => s.entries.length > 0 || s.id !== "none");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allRows, groups, memberOf, bySaved, active, selectedIds, term]);
+
 
   const entries = useMemo(() => sections.flatMap((s) => s.entries), [sections]);
   const multi = selectedIds.length > 1;
