@@ -6,6 +6,8 @@ export type Campaign = {
   name: string;
   color: string;
   note: string | null;
+  completed: boolean;
+  completed_at: string | null;
   created_at: string;
 };
 
@@ -28,6 +30,8 @@ export type CampaignMember = {
   result_likes: number | null;
   result_comments: number | null;
   memo: string | null;
+  completed: boolean;
+  completed_at: string | null;
 };
 
 export const CAMPAIGN_COLORS = [
@@ -81,6 +85,14 @@ export async function createCampaign(name: string, color: string, userId: string
 
 export async function updateCampaign(id: string, patch: { name?: string; color?: string }) {
   const { error } = await supabase.from("campaigns").update(patch as never).eq("id", id);
+  if (error) throw error;
+}
+
+export async function setCampaignCompleted(id: string, completed: boolean) {
+  const { error } = await supabase
+    .from("campaigns")
+    .update({ completed, completed_at: completed ? new Date().toISOString() : null } as never)
+    .eq("id", id);
   if (error) throw error;
 }
 

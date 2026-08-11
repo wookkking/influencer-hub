@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { List, Plus, Rows3, Search, X } from "lucide-react";
+import { CheckCircle2, List, Plus, RotateCcw, Rows3, Search, X } from "lucide-react";
 
 import { CampaignInfluencerCard } from "@/components/campaign-influencer-card";
 import { CampaignInfluencerRow } from "@/components/campaign-influencer-row";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useSessionUser } from "@/hooks/use-session-user";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import {
   CAMPAIGN_COLORS,
   addToCampaign,
@@ -28,6 +29,7 @@ import {
   fetchCampaignMembers,
   fetchCampaigns,
   removeFromCampaign,
+  setCampaignCompleted,
   updateCampaignMember,
   type CampaignMember,
 } from "@/lib/campaigns";
@@ -78,6 +80,7 @@ function toRecord(source: SavedWithInfluencer | CampaignMember): TrackRecord {
     result_likes: source.result_likes,
     result_comments: source.result_comments,
     memo: source.memo,
+    completed: source.completed,
   };
 }
 
@@ -93,9 +96,11 @@ function BoardPage() {
   const memberRows = members.data ?? [];
 
   /** "all" | "none" | 캠페인 id 배열(여러 캠페인 모아보기) */
-  const [active, setActive] = useState<"all" | "none">("all");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [view, setView] = useState<"detail" | "compact">("detail");
+  const [active, setActive] = usePersistedState<"all" | "none">("board:active", "all");
+  const [selectedIds, setSelectedIds] = usePersistedState<string[]>("board:selectedIds", []);
+  const [view, setView] = usePersistedState<"detail" | "compact">("board:view", "detail");
+  /** 진행 상태 분류: 진행중 / 완료 / 전체 */
+  const [phase, setPhase] = usePersistedState<"active" | "done" | "all">("board:phase", "active");
   const [q, setQ] = useState("");
 
   const [newName, setNewName] = useState("");
@@ -139,6 +144,10 @@ function BoardPage() {
         const member = group ? memberOf.get(`${group.id}:${row.id}`) : undefined;
         const record = toRecord(member ?? row);
         if (!matches(row, record)) continue;
+        const campaignDone = group?.completed ?? false;
+        const itemDone = record.completed || campaignDone;
+        if (phase === "active" && itemDone) continue;
+        if (phase === "done" && !itemDone) continue;
         entries.push({
           row,
           record,
@@ -157,6 +166,7 @@ function BoardPage() {
           id: g.id,
           title: g.name,
           color: g.color,
+          completed: g.completed,
           entries: build(
             allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(g.id)),
             g,
@@ -169,17 +179,33 @@ function BoardPage() {
 
     if (active === "none") {
       return [
-        { id: "none", title: "미분류", color: "default", entries: build(unassigned, null) },
+        {
+          id: "none",
+          title: "미분류",
+          color: "default",
+          completed: false,
+          entries: build(unassigned, null),
+        },
       ];
     }
 
     // 전체 보기도 캠페인 그룹별 섹션으로 나눠 보여준다
+    const visibleGroups = groups
+      .filter((g) => (phase === "active" ? !g.completed : phase === "done" ? true : true))
+      .sort((a, b) => Number(a.completed) - Number(b.completed));
+
     return [
-      ...groupSections(groups.map((g) => g.id)),
-      { id: "none", title: "미분류", color: "default", entries: build(unassigned, null) },
+      ...groupSections(visibleGroups.map((g) => g.id)),
+      {
+        id: "none",
+        title: "미분류",
+        color: "default",
+        completed: false,
+        entries: build(unassigned, null),
+      },
     ].filter((s) => s.entries.length > 0 || s.id !== "none");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allRows, groups, memberOf, bySaved, active, selectedIds, term]);
+  }, [allRows, groups, memberOf, bySaved, active, selectedIds, term, phase]);
 
 
   const entries = useMemo(() => sections.flatMap((s) => s.entries), [sections]);
@@ -212,6 +238,16 @@ function BoardPage() {
       toast.success("캠페인 그룹을 만들었습니다");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "캠페인 생성에 실패했습니다");
+    }
+  }
+
+  async function toggleCampaignDone(id: string, next: boolean) {
+    try {
+      await setCampaignCompleted(id, next);
+      await refreshGroups();
+      toast.success(next ? "완료된 캠페인으로 이동했습니다" : "진행중으로 되돌렸습니다");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "변경에 실패했습니다");
     }
   }
 
@@ -340,7 +376,33 @@ function BoardPage() {
             컨택·답변·조건과 성과는 따로 기록됩니다.
           </p>
         </div>
-        <div className="flex rounded-lg border border-border p-0.5">
+        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex rounded-lg border border-border bg-card p-0.5">
+          {(
+            [
+              { id: "active", label: "진행중" },
+              { id: "done", label: "완료" },
+              { id: "all", label: "전체" },
+            ] as const
+          ).map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setPhase(p.id)}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                phase === p.id
+                  ? p.id === "done"
+                    ? "bg-emerald-600 text-white"
+                    : "bg-secondary text-secondary-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex rounded-lg border border-border bg-card p-0.5">
           {(
             [
               { id: "detail", label: "상세보기", icon: Rows3 },
@@ -362,6 +424,7 @@ function BoardPage() {
               {v.label}
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -403,11 +466,23 @@ function BoardPage() {
                 "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors",
                 selectedIds.includes(g.id)
                   ? "border-primary bg-primary text-primary-foreground"
-                  : (colorClass[g.color] ?? colorClass['default']) + " hover:opacity-80",
+                  : g.completed
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:opacity-80"
+                    : (colorClass[g.color] ?? colorClass['default']) + " hover:opacity-80",
               )}
             >
+              {g.completed && <CheckCircle2 className="size-3" />}
               <span className="max-w-[160px] truncate">{g.name}</span>
               <span className="tabular opacity-70">{countFor(g.id)}</span>
+            </button>
+            <button
+              type="button"
+              aria-label={g.completed ? `${g.name} 진행중으로` : `${g.name} 완료 처리`}
+              title={g.completed ? "진행중으로 되돌리기" : "완료 처리"}
+              onClick={() => toggleCampaignDone(g.id, !g.completed)}
+              className="absolute -left-1.5 -top-1.5 hidden size-4 items-center justify-center rounded-full border border-border bg-background text-muted-foreground group-hover:flex"
+            >
+              {g.completed ? <RotateCcw className="size-2.5" /> : <CheckCircle2 className="size-2.5" />}
             </button>
             <button
               type="button"
@@ -498,22 +573,49 @@ function BoardPage() {
         <div className="rounded-xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
           {allRows.length === 0
             ? "아직 저장한 인플루언서가 없습니다. 탐색 화면에서 북마크를 눌러 추가해 보세요."
-            : "이 조건에 해당하는 인플루언서가 없습니다."}
+            : phase === "done"
+              ? "완료로 분류된 캠페인·인플루언서가 아직 없습니다."
+              : "이 조건에 해당하는 인플루언서가 없습니다."}
         </div>
       ) : (
         <div className="space-y-8">
           {sections.map((section) => (
             <section key={section.id} className="space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 border-b border-border/70 pb-2">
                 <span
                   className={cn(
-                    "rounded-full border px-3 py-1 text-xs",
-                    colorClass[section.color] ?? colorClass['default'],
+                    "rounded-full border px-3 py-1 text-sm font-semibold",
+                    section.completed
+                      ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                      : (colorClass[section.color] ?? colorClass['default']),
                   )}
                 >
                   {section.title}
                 </span>
+                {section.completed && (
+                  <span className="flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                    <CheckCircle2 className="size-3.5" /> 완료된 캠페인
+                  </span>
+                )}
                 <span className="text-xs text-muted-foreground">{section.entries.length}명</span>
+                {section.id !== "none" && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="ml-auto h-7 gap-1.5 text-xs"
+                    onClick={() => toggleCampaignDone(section.id, !section.completed)}
+                  >
+                    {section.completed ? (
+                      <>
+                        <RotateCcw className="size-3.5" /> 진행중으로
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="size-3.5" /> 캠페인 완료
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
 
               {section.entries.length === 0 ? (
@@ -522,7 +624,8 @@ function BoardPage() {
                 </p>
               ) : view === "compact" ? (
                 <div className="overflow-hidden rounded-xl border border-border bg-card">
-                  <div className="grid grid-cols-[minmax(180px,1.6fr)_repeat(3,minmax(88px,0.8fr))_repeat(3,minmax(72px,0.7fr))_32px] gap-2 border-b border-border bg-muted/50 px-3 py-2 text-[11px] font-medium text-muted-foreground">
+                  <div className="grid grid-cols-[28px_minmax(170px,1.6fr)_repeat(3,minmax(88px,0.8fr))_repeat(3,minmax(72px,0.7fr))_32px] gap-2 border-b border-border bg-muted/60 px-3 py-2 text-[11px] font-semibold text-muted-foreground">
+                    <span aria-hidden />
                     <span>인플루언서</span>
                     <span>컨택</span>
                     <span>답변</span>
