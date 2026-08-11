@@ -294,11 +294,14 @@ export async function fetchSaved(): Promise<SavedWithInfluencer[]> {
   return (data ?? []) as unknown as SavedWithInfluencer[];
 }
 
-export async function saveInfluencer(influencerId: string, userId: string) {
-  const { error } = await supabase
+export async function saveInfluencer(influencerId: string, userId: string): Promise<string> {
+  const { data, error } = await supabase
     .from("saved_influencers")
-    .insert({ influencer_id: influencerId, user_id: userId } as never);
+    .insert({ influencer_id: influencerId, user_id: userId } as never)
+    .select("id")
+    .single();
   if (error) throw error;
+  return (data as unknown as { id: string }).id;
 }
 
 export async function unsaveInfluencer(influencerId: string) {

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, X } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 
 import { CampaignInfluencerCard } from "@/components/campaign-influencer-card";
 import { PerformanceChart, type PerfPoint } from "@/components/performance-chart";
@@ -92,6 +92,8 @@ function BoardPage() {
   const memberRows = members.data ?? [];
 
   const [active, setActive] = useState<string>("all");
+  const [q, setQ] = useState("");
+
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState<string>("default");
   const [open, setOpen] = useState(false);
@@ -111,10 +113,21 @@ function BoardPage() {
   }, [memberRows]);
 
   const rows = useMemo(() => {
-    if (active === "all") return allRows;
-    if (active === "none") return allRows.filter((r) => !(bySaved.get(r.id) ?? []).length);
-    return allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(active));
-  }, [allRows, active, bySaved]);
+    const scoped =
+      active === "all"
+        ? allRows
+        : active === "none"
+          ? allRows.filter((r) => !(bySaved.get(r.id) ?? []).length)
+          : allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(active));
+    const term = q.trim().toLowerCase();
+    if (!term) return scoped;
+    return scoped.filter((r) =>
+      [r.influencer?.account, r.influencer?.bio, r.memo, r.contact_note, r.terms_note]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(term)),
+    );
+  }, [allRows, active, bySaved, q]);
+
 
   const activeGroup = groups.find((g) => g.id === active) ?? null;
   const scopeLabel = activeGroup ? `${activeGroup.name} 기록` : "기본 기록";
@@ -173,6 +186,16 @@ function BoardPage() {
     memberId: string | null,
     values: Record<string, unknown>,
   ) {
+    // 상단 요약/차트가 즉시 반영되도록 캐시를 먼저 갱신
+    if (memberId) {
+      queryClient.setQueryData<CampaignMember[]>(["campaign-members"], (prev) =>
+        (prev ?? []).map((m) => (m.id === memberId ? { ...m, ...values } : m)),
+      );
+    } else {
+      queryClient.setQueryData<SavedWithInfluencer[]>(["saved"], (prev) =>
+        (prev ?? []).map((s) => (s.id === row.id ? { ...s, ...values } : s)),
+      );
+    }
     try {
       if (memberId) {
         await updateCampaignMember(memberId, values);
@@ -183,8 +206,10 @@ function BoardPage() {
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "저장에 실패했습니다");
+      throw e;
     }
   }
+
 
   async function remove(influencerId: string) {
     await unsaveInfluencer(influencerId);
@@ -332,6 +357,18 @@ function BoardPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          className="pl-9"
+          placeholder="내 캠페인 검색 (계정, 소개, 메모, 조건)"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </div>
+
+
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {summary.map((s) => (
