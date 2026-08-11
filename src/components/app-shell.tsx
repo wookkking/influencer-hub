@@ -1,23 +1,45 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { Compass, ClipboardList, LogOut, Sparkles } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Compass, ClipboardList, LogOut, Settings, Shield, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionUser } from "@/hooks/use-session-user";
+import { useIsAdmin } from "@/hooks/use-is-admin";
+import { acceptRequiredTerms, fetchMyProfile } from "@/lib/accounts";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/search", label: "인플루언서 탐색", icon: Compass },
   { to: "/board", label: "내 캠페인", icon: ClipboardList },
+  { to: "/settings", label: "계정 설정", icon: Settings },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user } = useSessionUser();
+  const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const { data: profile } = useQuery({
+    queryKey: ["my-profile", user?.id],
+    enabled: !!user,
+    queryFn: () => fetchMyProfile(user!.id),
+  });
+
+  const accept = useMutation({
+    mutationFn: () => acceptRequiredTerms(user!.id),
+    onSuccess: () => {
+      toast.success("동의가 기록되었습니다");
+      void queryClient.invalidateQueries({ queryKey: ["my-profile", user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const needsConsent = !!profile && (!profile.terms_accepted_at || !profile.privacy_accepted_at);
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -56,6 +78,20 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </Link>
               );
             })}
+            {isAdmin && (
+              <Link
+                to="/admin/users"
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+                  pathname.startsWith("/admin")
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Shield className="size-4" />
+                <span className="hidden sm:inline">사용자 관리</span>
+              </Link>
+            )}
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
@@ -69,6 +105,27 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
+
+      {needsConsent && (
+        <div className="border-b border-border bg-muted/50">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 text-sm sm:px-6">
+            <p className="text-muted-foreground">
+              서비스 이용을 위해{" "}
+              <Link to="/terms" className="text-primary underline underline-offset-4">
+                이용약관
+              </Link>
+              과{" "}
+              <Link to="/privacy" className="text-primary underline underline-offset-4">
+                개인정보 처리방침
+              </Link>
+              에 동의해 주세요.
+            </p>
+            <Button size="sm" className="ml-auto" onClick={() => accept.mutate()} disabled={accept.isPending}>
+              동의하기
+            </Button>
+          </div>
+        </div>
+      )}
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>
     </div>

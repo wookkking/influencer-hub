@@ -194,6 +194,45 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          last_seen_at: string | null
+          marketing_opt_in: boolean
+          privacy_accepted_at: string | null
+          suspended: boolean
+          terms_accepted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          last_seen_at?: string | null
+          marketing_opt_in?: boolean
+          privacy_accepted_at?: string | null
+          suspended?: boolean
+          terms_accepted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          last_seen_at?: string | null
+          marketing_opt_in?: boolean
+          privacy_accepted_at?: string | null
+          suspended?: boolean
+          terms_accepted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       saved_influencers: {
         Row: {
           contact_date: string | null
@@ -276,6 +315,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_consents: {
+        Row: {
+          consent_type: string
+          created_at: string
+          document_version: string
+          granted: boolean
+          id: string
+          user_id: string
+        }
+        Insert: {
+          consent_type: string
+          created_at?: string
+          document_version?: string
+          granted: boolean
+          id?: string
+          user_id: string
+        }
+        Update: {
+          consent_type?: string
+          created_at?: string
+          document_version?: string
+          granted?: boolean
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

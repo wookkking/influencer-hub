@@ -37,13 +37,13 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const { next } = Route.useSearch();
-  const returnTo = next
-    ? new URL(next, window.location.origin).toString()
-    : window.location.origin;
+  const returnTo = () =>
+    next ? new URL(next, window.location.origin).toString() : window.location.origin;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -71,11 +71,15 @@ function AuthPage() {
 
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
+    if (!agreed) {
+      toast.error("이용약관과 개인정보 처리방침에 동의해 주세요");
+      return;
+    }
     setBusy(true);
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: returnTo },
+      options: { emailRedirectTo: returnTo() },
     });
     setBusy(false);
     if (error) toast.error(error.message);
@@ -84,7 +88,7 @@ function AuthPage() {
 
   async function google() {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: returnTo,
+      redirect_uri: returnTo(),
     });
     if (result.error) toast.error("구글 로그인에 실패했습니다");
   }
@@ -174,6 +178,22 @@ function AuthPage() {
                         onChange={(e) => setPassword(e.target.value)}
                       />
                     </div>
+                    {mode === "signup" && (
+                      <label className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 size-3.5 accent-[var(--primary)]"
+                          checked={agreed}
+                          onChange={(e) => setAgreed(e.target.checked)}
+                        />
+                        <span>
+                          <a href="/terms" target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">이용약관</a>
+                          {" 및 "}
+                          <a href="/privacy" target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">개인정보 처리방침</a>
+                          에 동의합니다. (필수)
+                        </span>
+                      </label>
+                    )}
                     <Button type="submit" className="w-full" disabled={busy}>
                       {mode === "signin" ? "로그인" : "가입하기"}
                     </Button>
