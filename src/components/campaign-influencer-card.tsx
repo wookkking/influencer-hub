@@ -129,9 +129,23 @@ export function CampaignInfluencerCard({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {status !== "idle" && (
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              {status === "saving" ? (
+                <>
+                  <Loader2 className="size-3 animate-spin" /> 저장 중
+                </>
+              ) : (
+                <>
+                  <Check className="size-3" /> 자동 저장됨
+                </>
+              )}
+            </span>
+          )}
           <Badge variant="secondary" className="text-[11px] font-normal">
             {scopeLabel}
           </Badge>
+
           <CampaignPicker
             campaigns={campaigns}
             selectedIds={selectedCampaignIds}
