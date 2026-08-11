@@ -2,9 +2,10 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Search, X } from "lucide-react";
+import { List, Plus, Rows3, Search, X } from "lucide-react";
 
 import { CampaignInfluencerCard } from "@/components/campaign-influencer-card";
+import { CampaignInfluencerRow } from "@/components/campaign-influencer-row";
 import { PerformanceChart, type PerfPoint } from "@/components/performance-chart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,7 +92,10 @@ function BoardPage() {
   const groups = campaigns.data ?? [];
   const memberRows = members.data ?? [];
 
-  const [active, setActive] = useState<string>("all");
+  /** "all" | "none" | 캠페인 id 배열(여러 캠페인 모아보기) */
+  const [active, setActive] = useState<"all" | "none">("all");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [view, setView] = useState<"detail" | "compact">("detail");
   const [q, setQ] = useState("");
 
   const [newName, setNewName] = useState("");
@@ -112,32 +116,70 @@ function BoardPage() {
     return map;
   }, [memberRows]);
 
-  const rows = useMemo(() => {
+  const term = q.trim().toLowerCase();
+  const matches = (row: SavedWithInfluencer, record: TrackRecord) =>
+    !term ||
+    [row.influencer?.account, row.influencer?.bio, record.memo, record.contact_note, record.terms_note]
+      .filter(Boolean)
+      .some((v) => String(v).toLowerCase().includes(term));
+
+  type Entry = {
+    row: SavedWithInfluencer;
+    record: TrackRecord;
+    memberId: string | null;
+    key: string;
+    groupName: string | null;
+  };
+
+  /** 선택 상태에 따라 (캠페인 × 인플루언서) 단위의 표시 목록을 만든다 */
+  const sections = useMemo(() => {
+    const build = (rowsIn: SavedWithInfluencer[], group: (typeof groups)[number] | null) => {
+      const entries: Entry[] = [];
+      for (const row of rowsIn) {
+        const member = group ? memberOf.get(`${group.id}:${row.id}`) : undefined;
+        const record = toRecord(member ?? row);
+        if (!matches(row, record)) continue;
+        entries.push({
+          row,
+          record,
+          memberId: member?.id ?? null,
+          key: member?.id ?? row.id,
+          groupName: group?.name ?? null,
+        });
+      }
+      return entries;
+    };
+
+    if (selectedIds.length > 0) {
+      return groups
+        .filter((g) => selectedIds.includes(g.id))
+        .map((g) => ({
+          id: g.id,
+          title: g.name,
+          color: g.color,
+          entries: build(
+            allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(g.id)),
+            g,
+          ),
+        }));
+    }
+
     const scoped =
-      active === "all"
-        ? allRows
-        : active === "none"
-          ? allRows.filter((r) => !(bySaved.get(r.id) ?? []).length)
-          : allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(active));
-    const term = q.trim().toLowerCase();
-    if (!term) return scoped;
-    return scoped.filter((r) =>
-      [r.influencer?.account, r.influencer?.bio, r.memo, r.contact_note, r.terms_note]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(term)),
-    );
-  }, [allRows, active, bySaved, q]);
+      active === "none" ? allRows.filter((r) => !(bySaved.get(r.id) ?? []).length) : allRows;
+    return [
+      {
+        id: active,
+        title: active === "none" ? "미분류" : "전체",
+        color: "default",
+        entries: build(scoped, null),
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allRows, groups, memberOf, bySaved, active, selectedIds, term]);
 
+  const entries = useMemo(() => sections.flatMap((s) => s.entries), [sections]);
+  const multi = selectedIds.length > 1;
 
-  const activeGroup = groups.find((g) => g.id === active) ?? null;
-  const scopeLabel = activeGroup ? `${activeGroup.name} 기록` : "기본 기록";
-
-  /** 활성 캠페인이면 캠페인별 기록, 아니면 내 리스트 기본 기록 */
-  function recordFor(row: SavedWithInfluencer) {
-    const member = activeGroup ? memberOf.get(`${activeGroup.id}:${row.id}`) : undefined;
-    if (member) return { key: member.id, record: toRecord(member), memberId: member.id };
-    return { key: row.id, record: toRecord(row), memberId: null as string | null };
-  }
 
   async function refreshGroups() {
     await Promise.all([
@@ -221,11 +263,10 @@ function BoardPage() {
 
   const points: PerfPoint[] = useMemo(() => {
     const list: PerfPoint[] = [];
-    for (const row of rows) {
-      const { record } = recordFor(row);
+    for (const { row, record, groupName } of entries) {
       if (!record.upload_date || !record.views) continue;
       list.push({
-        label: `${record.upload_date.slice(5)} ${row.influencer?.account ?? ""}`,
+        label: `${record.upload_date.slice(5)} ${row.influencer?.account ?? ""}${groupName && multi ? ` · ${groupName}` : ""}`,
         date: record.upload_date,
         views: record.views,
         reactions: (record.result_likes ?? 0) + (record.result_comments ?? 0),
@@ -234,24 +275,21 @@ function BoardPage() {
       });
     }
     return list;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, memberOf, activeGroup]);
+  }, [entries, multi]);
 
   const totals = useMemo(() => {
     let views = 0;
     let reactions = 0;
     let followers = 0;
     let contacted = 0;
-    for (const row of rows) {
-      const { record } = recordFor(row);
+    for (const { row, record } of entries) {
       views += record.views ?? 0;
       reactions += (record.result_likes ?? 0) + (record.result_comments ?? 0);
       followers += row.influencer?.followers ?? 0;
       if (record.contact_status === "컨택완료") contacted += 1;
     }
     return { views, reactions, followers, contacted };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, memberOf, activeGroup]);
+  }, [entries]);
 
   const countFor = (id: string) =>
     id === "all"
@@ -261,7 +299,7 @@ function BoardPage() {
         : allRows.filter((r) => (bySaved.get(r.id) ?? []).includes(id)).length;
 
   const summary = [
-    { label: "인플루언서", value: nf.format(rows.length) },
+    { label: "인플루언서", value: nf.format(entries.length) },
     { label: "총 조회수", value: nf.format(totals.views) },
     {
       label: "평균 반응률",
@@ -273,29 +311,84 @@ function BoardPage() {
     },
   ];
 
+  function toggleGroupTab(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">내 캠페인</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          캠페인 그룹을 고르면 그 프로젝트 기준으로 컨택·답변·조건과 성과를 따로 기록합니다. 한
-          명이 여러 캠페인에 동시에 속할 수 있어요.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">내 캠페인</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            캠페인 그룹을 여러 개 선택하면 A·B·C 캠페인을 한 화면에 모아볼 수 있어요. 그룹별로
+            컨택·답변·조건과 성과는 따로 기록됩니다.
+          </p>
+        </div>
+        <div className="flex rounded-lg border border-border p-0.5">
+          {(
+            [
+              { id: "detail", label: "상세보기", icon: Rows3 },
+              { id: "compact", label: "간략히", icon: List },
+            ] as const
+          ).map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              onClick={() => setView(v.id)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs transition-colors",
+                view === v.id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <v.icon className="size-3.5" />
+              {v.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         {[
           { id: "all", name: "전체", color: "default" },
           { id: "none", name: "미분류", color: "default" },
-          ...groups,
-        ].map((g) => (
+        ].map((g) => {
+          const on = selectedIds.length === 0 && active === g.id;
+          return (
+            <button
+              key={g.id}
+              type="button"
+              onClick={() => {
+                setSelectedIds([]);
+                setActive(g.id as "all" | "none");
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors",
+                on
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : (colorClass['default'] ?? "") + " hover:opacity-80",
+              )}
+            >
+              <span>{g.name}</span>
+              <span className="tabular opacity-70">{countFor(g.id)}</span>
+            </button>
+          );
+        })}
+
+        <span className="mx-1 h-5 w-px bg-border" />
+
+        {groups.map((g) => (
           <div key={g.id} className="group relative">
             <button
               type="button"
-              onClick={() => setActive(g.id)}
+              onClick={() => toggleGroupTab(g.id)}
               className={cn(
                 "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors",
-                active === g.id
+                selectedIds.includes(g.id)
                   ? "border-primary bg-primary text-primary-foreground"
                   : (colorClass[g.color] ?? colorClass['default']) + " hover:opacity-80",
               )}
@@ -303,18 +396,27 @@ function BoardPage() {
               <span className="max-w-[160px] truncate">{g.name}</span>
               <span className="tabular opacity-70">{countFor(g.id)}</span>
             </button>
-            {g.id !== "all" && g.id !== "none" && (
-              <button
-                type="button"
-                aria-label={`${g.name} 그룹 삭제`}
-                onClick={() => removeCampaign(g.id)}
-                className="absolute -right-1.5 -top-1.5 hidden size-4 items-center justify-center rounded-full border border-border bg-background text-muted-foreground group-hover:flex"
-              >
-                <X className="size-2.5" />
-              </button>
-            )}
+            <button
+              type="button"
+              aria-label={`${g.name} 그룹 삭제`}
+              onClick={() => removeCampaign(g.id)}
+              className="absolute -right-1.5 -top-1.5 hidden size-4 items-center justify-center rounded-full border border-border bg-background text-muted-foreground group-hover:flex"
+            >
+              <X className="size-2.5" />
+            </button>
           </div>
         ))}
+
+        {selectedIds.length > 0 && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 rounded-full text-xs"
+            onClick={() => setSelectedIds([])}
+          >
+            선택 해제
+          </Button>
+        )}
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -368,8 +470,6 @@ function BoardPage() {
         />
       </div>
 
-
-
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {summary.map((s) => (
           <div key={s.label} className="rounded-xl border border-border bg-card p-4">
@@ -381,33 +481,81 @@ function BoardPage() {
 
       <PerformanceChart points={points} />
 
-      {rows.length === 0 ? (
+      {entries.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
           {allRows.length === 0
             ? "아직 저장한 인플루언서가 없습니다. 탐색 화면에서 북마크를 눌러 추가해 보세요."
-            : "이 그룹에 속한 인플루언서가 없습니다."}
+            : "이 조건에 해당하는 인플루언서가 없습니다."}
         </div>
       ) : (
-        <div className="space-y-4">
-          {rows.map((row) => {
-            const { key, record, memberId } = recordFor(row);
-            return (
-              <CampaignInfluencerCard
-                key={`${active}-${row.id}`}
-                recordKey={key}
-                influencer={row.influencer ?? null}
-                record={record}
-                scopeLabel={scopeLabel}
-                campaigns={groups}
-                selectedCampaignIds={bySaved.get(row.id) ?? []}
-                onToggleCampaign={(cid, next) => toggleMember(row.id, cid, next)}
-                onPatch={(values) => patch(row, memberId, values)}
-                onRemove={() => remove(row.influencer_id)}
-              />
-            );
-          })}
+        <div className="space-y-8">
+          {sections.map((section) => (
+            <section key={section.id} className="space-y-3">
+              {selectedIds.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-xs",
+                      colorClass[section.color] ?? colorClass['default'],
+                    )}
+                  >
+                    {section.title}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {section.entries.length}명
+                  </span>
+                </div>
+              )}
+
+              {section.entries.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+                  이 그룹에 속한 인플루언서가 없습니다.
+                </p>
+              ) : view === "compact" ? (
+                <div className="overflow-hidden rounded-xl border border-border bg-card">
+                  <div className="grid grid-cols-[minmax(180px,1.6fr)_repeat(3,minmax(88px,0.8fr))_repeat(3,minmax(72px,0.7fr))] gap-2 border-b border-border bg-muted/50 px-3 py-2 text-[11px] font-medium text-muted-foreground">
+                    <span>인플루언서</span>
+                    <span>컨택</span>
+                    <span>답변</span>
+                    <span>조회수</span>
+                    <span>좋아요</span>
+                    <span>댓글</span>
+                    <span className="text-right">반응/도달/팔로워</span>
+                  </div>
+                  {section.entries.map((e) => (
+                    <CampaignInfluencerRow
+                      key={`${section.id}-${e.row.id}`}
+                      recordKey={e.key}
+                      influencer={e.row.influencer ?? null}
+                      record={e.record}
+                      scopeLabel={multi ? e.groupName : null}
+                      onPatch={(values) => patch(e.row, e.memberId, values)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {section.entries.map((e) => (
+                    <CampaignInfluencerCard
+                      key={`${section.id}-${e.row.id}`}
+                      recordKey={e.key}
+                      influencer={e.row.influencer ?? null}
+                      record={e.record}
+                      scopeLabel={e.groupName ? `${e.groupName} 기록` : "기본 기록"}
+                      campaigns={groups}
+                      selectedCampaignIds={bySaved.get(e.row.id) ?? []}
+                      onToggleCampaign={(cid, next) => toggleMember(e.row.id, cid, next)}
+                      onPatch={(values) => patch(e.row, e.memberId, values)}
+                      onRemove={() => remove(e.row.influencer_id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          ))}
         </div>
       )}
     </div>
   );
 }
+
