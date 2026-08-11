@@ -173,6 +173,16 @@ function BoardPage() {
     memberId: string | null,
     values: Record<string, unknown>,
   ) {
+    // 상단 요약/차트가 즉시 반영되도록 캐시를 먼저 갱신
+    if (memberId) {
+      queryClient.setQueryData<CampaignMember[]>(["campaign-members"], (prev) =>
+        (prev ?? []).map((m) => (m.id === memberId ? { ...m, ...values } : m)),
+      );
+    } else {
+      queryClient.setQueryData<SavedWithInfluencer[]>(["saved"], (prev) =>
+        (prev ?? []).map((s) => (s.id === row.id ? { ...s, ...values } : s)),
+      );
+    }
     try {
       if (memberId) {
         await updateCampaignMember(memberId, values);
@@ -183,8 +193,10 @@ function BoardPage() {
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "저장에 실패했습니다");
+      throw e;
     }
   }
+
 
   async function remove(influencerId: string) {
     await unsaveInfluencer(influencerId);
