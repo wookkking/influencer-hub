@@ -17,6 +17,8 @@ export type Database = {
       campaign_members: {
         Row: {
           campaign_id: string
+          completed: boolean
+          completed_at: string | null
           contact_date: string | null
           contact_note: string | null
           contact_status: string
@@ -40,6 +42,8 @@ export type Database = {
         }
         Insert: {
           campaign_id: string
+          completed?: boolean
+          completed_at?: string | null
           contact_date?: string | null
           contact_note?: string | null
           contact_status?: string
@@ -63,6 +67,8 @@ export type Database = {
         }
         Update: {
           campaign_id?: string
+          completed?: boolean
+          completed_at?: string | null
           contact_date?: string | null
           contact_note?: string | null
           contact_status?: string
@@ -104,6 +110,8 @@ export type Database = {
       campaigns: {
         Row: {
           color: string
+          completed: boolean
+          completed_at: string | null
           created_at: string
           id: string
           name: string
@@ -113,6 +121,8 @@ export type Database = {
         }
         Insert: {
           color?: string
+          completed?: boolean
+          completed_at?: string | null
           created_at?: string
           id?: string
           name: string
@@ -122,6 +132,8 @@ export type Database = {
         }
         Update: {
           color?: string
+          completed?: boolean
+          completed_at?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -235,6 +247,8 @@ export type Database = {
       }
       saved_influencers: {
         Row: {
+          completed: boolean
+          completed_at: string | null
           contact_date: string | null
           contact_note: string | null
           contact_status: string
@@ -259,6 +273,8 @@ export type Database = {
           views: number | null
         }
         Insert: {
+          completed?: boolean
+          completed_at?: string | null
           contact_date?: string | null
           contact_note?: string | null
           contact_status?: string
@@ -283,6 +299,8 @@ export type Database = {
           views?: number | null
         }
         Update: {
+          completed?: boolean
+          completed_at?: string | null
           contact_date?: string | null
           contact_note?: string | null
           contact_status?: string
