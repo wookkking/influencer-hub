@@ -134,7 +134,8 @@ function SearchPage() {
       ]);
     }
     const map = new Map<string, string[]>();
-    for (const [infId, sid] of savedRowId) map.set(infId, bySavedId.get(sid) ?? []);
+    for (const [infId, sid] of Array.from(savedRowId.entries()))
+      map.set(infId, bySavedId.get(sid) ?? []);
     return map;
   }, [members.data, savedRowId]);
 
