@@ -92,6 +92,8 @@ function BoardPage() {
   const memberRows = members.data ?? [];
 
   const [active, setActive] = useState<string>("all");
+  const [q, setQ] = useState("");
+
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState<string>("default");
   const [open, setOpen] = useState(false);
