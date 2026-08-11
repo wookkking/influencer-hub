@@ -41,6 +41,8 @@ export type SavedInfluencer = {
   result_likes: number | null;
   result_comments: number | null;
   memo: string | null;
+  completed: boolean;
+  completed_at: string | null;
   created_at: string;
 };
 
@@ -61,6 +63,7 @@ export type TrackRecord = {
   result_likes: number | null;
   result_comments: number | null;
   memo: string | null;
+  completed: boolean;
 };
 
 /** 조회수 ÷ 팔로워 (도달률) */
