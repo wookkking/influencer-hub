@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { refreshAllInstagramProfiles } from "@/lib/instagram-refresh.functions";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -11,6 +14,8 @@ import {
   Search,
   Trash2,
   Download,
+  RefreshCw,
+
   Users,
   Sparkles,
   X,
@@ -213,6 +218,19 @@ function SearchPage() {
     })),
   ].filter(Boolean) as { key: string; label: string; clear: () => void }[];
 
+  const runRefreshAll = useServerFn(refreshAllInstagramProfiles);
+  const refreshAll = useMutation({
+    mutationFn: () => runRefreshAll({} as never),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["directory"] });
+      toast.success(
+        `${res.updated}개 계정 지표를 갱신했습니다.${res.failed.length ? ` (실패 ${res.failed.length}개)` : ""}`,
+      );
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "갱신에 실패했습니다."),
+  });
+
   const resetAll = () => {
     setQ("");
     setPlatform("전체");
@@ -236,6 +254,14 @@ function SearchPage() {
         </div>
         {isAdmin && (
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={refreshAll.isPending}
+              onClick={() => refreshAll.mutate()}
+            >
+              <RefreshCw className={cn("size-4", refreshAll.isPending && "animate-spin")} />
+              {refreshAll.isPending ? "갱신 중…" : "전체 지표 갱신"}
+            </Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Download className="size-4" /> 인스타 가져오기
             </Button>
@@ -249,6 +275,7 @@ function SearchPage() {
             </Button>
           </div>
         )}
+
       </div>
 
       {/* 필터 바 — 스크롤해도 상단에 고정되어 조건 변경이 쉽다 */}
