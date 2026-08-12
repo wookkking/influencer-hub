@@ -215,6 +215,19 @@ function SearchPage() {
     })),
   ].filter(Boolean) as { key: string; label: string; clear: () => void }[];
 
+  const runRefreshAll = useServerFn(refreshAllInstagramProfiles);
+  const refreshAll = useMutation({
+    mutationFn: () => runRefreshAll({} as never),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["directory"] });
+      toast.success(
+        `${res.updated}개 계정 지표를 갱신했습니다.${res.failed.length ? ` (실패 ${res.failed.length}개)` : ""}`,
+      );
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "갱신에 실패했습니다."),
+  });
+
   const resetAll = () => {
     setQ("");
     setPlatform("전체");
