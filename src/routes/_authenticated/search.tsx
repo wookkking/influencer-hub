@@ -11,6 +11,8 @@ import {
   Search,
   Trash2,
   Download,
+  RefreshCw,
+
   Users,
   Sparkles,
   X,
@@ -236,6 +238,14 @@ function SearchPage() {
         </div>
         {isAdmin && (
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={refreshAll.isPending}
+              onClick={() => refreshAll.mutate()}
+            >
+              <RefreshCw className={cn("size-4", refreshAll.isPending && "animate-spin")} />
+              {refreshAll.isPending ? "갱신 중…" : "전체 지표 갱신"}
+            </Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Download className="size-4" /> 인스타 가져오기
             </Button>
@@ -249,6 +259,7 @@ function SearchPage() {
             </Button>
           </div>
         )}
+
       </div>
 
       {/* 필터 바 — 스크롤해도 상단에 고정되어 조건 변경이 쉽다 */}
