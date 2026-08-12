@@ -220,7 +220,8 @@ function SearchPage() {
 
   const runRefreshAll = useServerFn(refreshAllInstagramProfiles);
   const refreshAll = useMutation({
-    mutationFn: () => runRefreshAll({} as never),
+    mutationFn: () =>
+      runRefreshAll({} as never) as Promise<{ updated: number; failed: string[] }>,
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["directory"] });
       toast.success(
