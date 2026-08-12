@@ -280,7 +280,7 @@ function SearchPage() {
       </div>
 
       {/* 전체 지표 갱신 결과 요약 */}
-      {isAdmin && (refreshAll.isPending || refreshAll.data || refreshAll.error) && (
+      {isAdmin && Boolean(refreshAll.isPending || refreshAll.data || refreshAll.error) && (
         <div
           className={cn(
             "rounded-2xl border p-4 text-sm",
