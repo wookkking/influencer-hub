@@ -173,20 +173,27 @@ export function InfluencerFormDialog({ open, onOpenChange, row, onSubmit }: Prop
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="followers">팔로워</Label>
               <Input id="followers" type="number" {...form.register("followers")} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="avg_likes">평균 좋아요</Label>
+              <Label htmlFor="avg_views">평균 조회수 (최근 게시글)</Label>
+              <Input id="avg_views" type="number" {...form.register("avg_views")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="avg_likes">평균 좋아요 (최근 게시글)</Label>
               <Input id="avg_likes" type="number" {...form.register("avg_likes")} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="avg_comments">평균 댓글</Label>
+              <Label htmlFor="avg_comments">평균 댓글 (최근 게시글)</Label>
               <Input id="avg_comments" type="number" {...form.register("avg_comments")} />
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            참여율은 (평균 좋아요 + 평균 댓글) ÷ 팔로워로 자동 계산됩니다.
+          </p>
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>

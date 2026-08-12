@@ -13,11 +13,20 @@ export type ScrapedProfile = {
   bio: string | null;
   followers: number;
   avg_likes: number;
+  avg_views: number;
   avg_comments: number;
   last_post_date: string | null;
 };
 
-type ApifyPost = { likesCount?: number; commentsCount?: number; timestamp?: string };
+type ApifyPost = {
+  likesCount?: number;
+  commentsCount?: number;
+  timestamp?: string;
+  videoPlayCount?: number;
+  videoViewCount?: number;
+  playCount?: number;
+  viewCount?: number;
+};
 type ApifyItem = {
   username?: string;
   url?: string;
@@ -38,6 +47,9 @@ export function normalizeHandle(raw: string): string {
   return v.replace(/^@/, "").replace(/\/+$/, "").trim();
 }
 
+/** 평균 계산에 사용할 최근 게시글 수 */
+const RECENT_POSTS = 9;
+
 function average(values: number[]): number {
   if (!values.length) return 0;
   return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
@@ -45,9 +57,15 @@ function average(values: number[]): number {
 
 function mapItem(item: ApifyItem): ScrapedProfile | null {
   if (!item.username) return null;
-  const posts = (item.latestPosts ?? []).slice(0, 12);
+  // 최근 게시글 기준으로 평균을 계산 (최신순 정렬 후 상위 9개)
+  const posts = [...(item.latestPosts ?? [])]
+    .sort((a, b) => (b.timestamp ?? "").localeCompare(a.timestamp ?? ""))
+    .slice(0, RECENT_POSTS);
   const likes = posts.map((p) => p.likesCount ?? 0).filter((n) => n > 0);
   const comments = posts.map((p) => p.commentsCount ?? 0).filter((n) => n >= 0);
+  const views = posts
+    .map((p) => p.videoPlayCount ?? p.videoViewCount ?? p.playCount ?? p.viewCount ?? 0)
+    .filter((n) => n > 0);
   const timestamps = posts
     .map((p) => p.timestamp)
     .filter((t): t is string => !!t)
@@ -61,6 +79,7 @@ function mapItem(item: ApifyItem): ScrapedProfile | null {
     bio: item.biography?.trim() || null,
     followers: item.followersCount ?? 0,
     avg_likes: average(likes),
+    avg_views: average(views),
     avg_comments: average(comments),
     last_post_date: latest ? latest.slice(0, 10) : null,
   };

@@ -1,0 +1,1 @@
+ALTER TABLE public.influencers ADD COLUMN IF NOT EXISTS avg_views integer NOT NULL DEFAULT 0;

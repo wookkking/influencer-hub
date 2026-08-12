@@ -26,7 +26,7 @@ export default defineTool({
     let q = supabase
       .from("influencers")
       .select(
-        "id, account, platform, followers, avg_likes, avg_comments, engagement_rate, categories, bio, profile_url, last_post_date",
+        "id, account, platform, followers, avg_likes, avg_views, avg_comments, engagement_rate, categories, bio, profile_url, last_post_date",
       );
 
     if (input.query) q = q.or(`account.ilike.%${input.query}%,bio.ilike.%${input.query}%`);
