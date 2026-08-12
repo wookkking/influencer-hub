@@ -148,6 +148,7 @@ export type Database = {
           account: string
           avg_comments: number
           avg_likes: number
+          avg_views: number
           bio: string | null
           brand: string | null
           categories: string[]
@@ -168,6 +169,7 @@ export type Database = {
           account: string
           avg_comments?: number
           avg_likes?: number
+          avg_views?: number
           bio?: string | null
           brand?: string | null
           categories?: string[]
@@ -188,6 +190,7 @@ export type Database = {
           account?: string
           avg_comments?: number
           avg_likes?: number
+          avg_views?: number
           bio?: string | null
           brand?: string | null
           categories?: string[]
