@@ -13,13 +13,18 @@ export async function persistProfiles(
 ): Promise<SyncResult[]> {
   const results: SyncResult[] = [];
 
+  const { cacheProfilePhoto } = await import("./instagram-photos.server");
+
   for (const p of profiles) {
     // 값이 0인 항목(영상이 없는 계정 등)은 기존 값을 덮어쓰지 않는다.
     const patch: Record<string, unknown> = {
       profile_url: p.profile_url,
       last_synced_at: new Date().toISOString(),
     };
-    if (p.photo_url) patch["photo_url"] = p.photo_url;
+    // 인스타 CDN 링크는 만료되므로 이미지를 스토리지에 캐시해 둔다.
+    const cached = await cacheProfilePhoto(p.account, p.photo_url);
+    if (cached) patch["photo_url"] = cached;
+    else if (p.photo_url) patch["photo_url"] = p.photo_url;
     if (p.bio) patch["bio"] = p.bio;
     if (p.followers > 0) patch["followers"] = p.followers;
     if (p.avg_likes > 0) patch["avg_likes"] = p.avg_likes;
