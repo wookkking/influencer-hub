@@ -10,12 +10,14 @@ export const importInstagramProfiles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => inputSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin, error: roleError } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const { data: adminRow, error: roleError } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
     if (roleError) throw roleError;
-    if (!isAdmin) throw new Error("관리자만 사용할 수 있습니다.");
+    if (!adminRow) throw new Error("관리자만 사용할 수 있습니다.");
 
     const { scrapeInstagramProfiles } = await import("./instagram.server");
     const { persistProfiles } = await import("./instagram-sync.server");
