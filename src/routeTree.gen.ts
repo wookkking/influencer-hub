@@ -24,6 +24,7 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as ApiPublicRefreshInstagramRouteImport } from './routes/api/public/refresh-instagram'
+import { Route as ApiPublicInfluencerPhotoKeyRouteImport } from './routes/api/public/influencer-photo.$key'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -103,6 +104,12 @@ const ApiPublicRefreshInstagramRoute =
     path: '/api/public/refresh-instagram',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicInfluencerPhotoKeyRoute =
+  ApiPublicInfluencerPhotoKeyRouteImport.update({
+    id: '/api/public/influencer-photo/$key',
+    path: '/api/public/influencer-photo/$key',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/refresh-instagram': typeof ApiPublicRefreshInstagramRoute
+  '/api/public/influencer-photo/$key': typeof ApiPublicInfluencerPhotoKeyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -135,6 +143,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/refresh-instagram': typeof ApiPublicRefreshInstagramRoute
+  '/api/public/influencer-photo/$key': typeof ApiPublicInfluencerPhotoKeyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -153,6 +162,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/api/public/refresh-instagram': typeof ApiPublicRefreshInstagramRoute
+  '/api/public/influencer-photo/$key': typeof ApiPublicInfluencerPhotoKeyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/admin/users'
     | '/api/public/refresh-instagram'
+    | '/api/public/influencer-photo/$key'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/admin/users'
     | '/api/public/refresh-instagram'
+    | '/api/public/influencer-photo/$key'
   id:
     | '__root__'
     | '/'
@@ -204,6 +216,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/users'
     | '/api/public/refresh-instagram'
+    | '/api/public/influencer-photo/$key'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -218,6 +231,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicRefreshInstagramRoute: typeof ApiPublicRefreshInstagramRoute
+  ApiPublicInfluencerPhotoKeyRoute: typeof ApiPublicInfluencerPhotoKeyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -327,6 +341,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicRefreshInstagramRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/influencer-photo/$key': {
+      id: '/api/public/influencer-photo/$key'
+      path: '/api/public/influencer-photo/$key'
+      fullPath: '/api/public/influencer-photo/$key'
+      preLoaderRoute: typeof ApiPublicInfluencerPhotoKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -360,6 +381,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicRefreshInstagramRoute: ApiPublicRefreshInstagramRoute,
+  ApiPublicInfluencerPhotoKeyRoute: ApiPublicInfluencerPhotoKeyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
