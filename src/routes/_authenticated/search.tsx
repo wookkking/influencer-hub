@@ -220,7 +220,8 @@ function SearchPage() {
 
   const runRefreshAll = useServerFn(refreshAllInstagramProfiles);
   const refreshAll = useMutation({
-    mutationFn: () => runRefreshAll({} as never),
+    mutationFn: () =>
+      runRefreshAll({} as never) as Promise<{ updated: number; failed: string[] }>,
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["directory"] });
       toast.success(
@@ -277,6 +278,59 @@ function SearchPage() {
         )}
 
       </div>
+
+      {/* 전체 지표 갱신 결과 요약 */}
+      {isAdmin && Boolean(refreshAll.isPending || refreshAll.data || refreshAll.error) && (
+        <div
+          className={cn(
+            "rounded-2xl border p-4 text-sm",
+            refreshAll.error
+              ? "border-destructive/40 bg-destructive/10 text-destructive"
+              : "border-border bg-card",
+          )}
+        >
+          {refreshAll.isPending ? (
+            <p className="flex items-center gap-2 text-muted-foreground">
+              <RefreshCw className="size-4 animate-spin" /> 인스타 계정 지표를 갱신하는 중입니다…
+            </p>
+          ) : refreshAll.error ? (
+            <p>
+              갱신 실패:{" "}
+              {refreshAll.error instanceof Error
+                ? refreshAll.error.message
+                : "알 수 없는 오류가 발생했습니다."}
+            </p>
+          ) : refreshAll.data ? (
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="font-medium">갱신 완료</span>
+                <span className="text-emerald-600">
+                  성공 {refreshAll.data.updated}개
+                </span>
+                <span
+                  className={
+                    refreshAll.data.failed.length ? "text-destructive" : "text-muted-foreground"
+                  }
+                >
+                  실패 {refreshAll.data.failed.length}개
+                </span>
+                <button
+                  type="button"
+                  className="ml-auto text-xs text-muted-foreground underline"
+                  onClick={() => refreshAll.reset()}
+                >
+                  닫기
+                </button>
+              </div>
+              {refreshAll.data.failed.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  실패 계정: {refreshAll.data.failed.join(", ")}
+                </p>
+              )}
+            </div>
+          ) : null}
+        </div>
+      )}
 
       {/* 필터 바 — 스크롤해도 상단에 고정되어 조건 변경이 쉽다 */}
       <div className="sticky top-2 z-20 space-y-3 rounded-2xl border border-border bg-card/95 p-4 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/80">
