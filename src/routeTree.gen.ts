@@ -23,6 +23,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
+import { Route as ApiPublicDebugPhotoRouteImport } from './routes/api/public/debug-photo'
 import { Route as ApiPublicRefreshInstagramRouteImport } from './routes/api/public/refresh-instagram'
 import { Route as ApiPublicInfluencerPhotoKeyRouteImport } from './routes/api/public/influencer-photo.$key'
 
@@ -98,6 +99,11 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicDebugPhotoRoute = ApiPublicDebugPhotoRouteImport.update({
+  id: '/api/public/debug-photo',
+  path: '/api/public/debug-photo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicRefreshInstagramRoute =
   ApiPublicRefreshInstagramRouteImport.update({
     id: '/api/public/refresh-instagram',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/debug-photo': typeof ApiPublicDebugPhotoRoute
   '/api/public/refresh-instagram': typeof ApiPublicRefreshInstagramRoute
   '/api/public/influencer-photo/$key': typeof ApiPublicInfluencerPhotoKeyRoute
 }
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/debug-photo': typeof ApiPublicDebugPhotoRoute
   '/api/public/refresh-instagram': typeof ApiPublicRefreshInstagramRoute
   '/api/public/influencer-photo/$key': typeof ApiPublicInfluencerPhotoKeyRoute
 }
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/api/public/debug-photo': typeof ApiPublicDebugPhotoRoute
   '/api/public/refresh-instagram': typeof ApiPublicRefreshInstagramRoute
   '/api/public/influencer-photo/$key': typeof ApiPublicInfluencerPhotoKeyRoute
 }
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/users'
+    | '/api/public/debug-photo'
     | '/api/public/refresh-instagram'
     | '/api/public/influencer-photo/$key'
   fileRoutesByTo: FileRoutesByTo
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/users'
+    | '/api/public/debug-photo'
     | '/api/public/refresh-instagram'
     | '/api/public/influencer-photo/$key'
   id:
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/users'
+    | '/api/public/debug-photo'
     | '/api/public/refresh-instagram'
     | '/api/public/influencer-photo/$key'
   fileRoutesById: FileRoutesById
@@ -230,6 +242,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicDebugPhotoRoute: typeof ApiPublicDebugPhotoRoute
   ApiPublicRefreshInstagramRoute: typeof ApiPublicRefreshInstagramRoute
   ApiPublicInfluencerPhotoKeyRoute: typeof ApiPublicInfluencerPhotoKeyRoute
 }
@@ -334,6 +347,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/debug-photo': {
+      id: '/api/public/debug-photo'
+      path: '/api/public/debug-photo'
+      fullPath: '/api/public/debug-photo'
+      preLoaderRoute: typeof ApiPublicDebugPhotoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/refresh-instagram': {
       id: '/api/public/refresh-instagram'
       path: '/api/public/refresh-instagram'
@@ -380,6 +400,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicDebugPhotoRoute: ApiPublicDebugPhotoRoute,
   ApiPublicRefreshInstagramRoute: ApiPublicRefreshInstagramRoute,
   ApiPublicInfluencerPhotoKeyRoute: ApiPublicInfluencerPhotoKeyRoute,
 }
