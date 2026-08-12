@@ -11,6 +11,7 @@ export type Influencer = {
   profile_url: string | null;
   followers: number;
   avg_likes: number;
+  avg_views: number;
   avg_comments: number;
   engagement_rate: number | null;
   categories: string[];
@@ -134,6 +135,7 @@ export const influencerSchema = z.object({
   categories: z.array(z.string()).max(10),
   followers: z.coerce.number().int().min(0).max(1_000_000_000),
   avg_likes: z.coerce.number().int().min(0).max(1_000_000_000),
+  avg_views: z.coerce.number().int().min(0).max(1_000_000_000),
   avg_comments: z.coerce.number().int().min(0).max(1_000_000_000),
   last_post_date: z.string().optional().or(z.literal("")),
 });
@@ -154,6 +156,7 @@ export function toInfluencerRow(values: InfluencerFormValues) {
     categories: values.categories,
     followers: values.followers,
     avg_likes: values.avg_likes,
+    avg_views: values.avg_views,
     avg_comments: values.avg_comments,
     last_post_date: nullIfEmpty(values.last_post_date),
   };
@@ -169,6 +172,7 @@ export function toInfluencerForm(row?: Influencer | null): InfluencerFormValues 
     categories: row?.categories ?? [],
     followers: row?.followers ?? 0,
     avg_likes: row?.avg_likes ?? 0,
+    avg_views: row?.avg_views ?? 0,
     avg_comments: row?.avg_comments ?? 0,
     last_post_date: row?.last_post_date ?? "",
   };

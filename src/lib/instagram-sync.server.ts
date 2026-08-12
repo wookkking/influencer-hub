@@ -20,6 +20,7 @@ export async function persistProfiles(
       bio: p.bio,
       followers: p.followers,
       avg_likes: p.avg_likes,
+      avg_views: p.avg_views,
       avg_comments: p.avg_comments,
       last_post_date: p.last_post_date,
       last_synced_at: new Date().toISOString(),
