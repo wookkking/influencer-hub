@@ -459,31 +459,46 @@ function SearchPage() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-3 divide-x divide-border rounded-xl border border-border/70 bg-muted/40 py-2.5 text-center">
-                  <div>
-                    <p className="tabular text-sm font-semibold">{nf.format(row.followers)}</p>
-                    <p className="text-[11px] text-muted-foreground">팔로워</p>
+                <div className="rounded-xl border border-border/70 bg-muted/40 py-2.5 text-center">
+                  <div className="grid grid-cols-3 divide-x divide-border">
+                    <div>
+                      <p className="tabular text-sm font-semibold">{nf.format(row.followers)}</p>
+                      <p className="text-[11px] text-muted-foreground">팔로워</p>
+                    </div>
+                    <div>
+                      <p className="tabular text-sm font-semibold">
+                        {row.avg_views ? nf.format(row.avg_views) : "–"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">평균 조회수</p>
+                    </div>
+                    <div>
+                      <p
+                        className={cn(
+                          "tabular flex items-center justify-center gap-1 text-sm font-semibold",
+                          tier === "high"
+                            ? "text-accent"
+                            : tier === "mid"
+                              ? "text-foreground"
+                              : "text-muted-foreground",
+                        )}
+                      >
+                        {tier === "high" && <Sparkles className="size-3" />}
+                        {er.toFixed(2)}%
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">참여율(자동)</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="tabular text-sm font-semibold">{nf.format(row.avg_likes)}</p>
-                    <p className="text-[11px] text-muted-foreground">평균 좋아요</p>
+                  <div className="mt-2 grid grid-cols-2 divide-x divide-border border-t border-border/70 pt-2">
+                    <div>
+                      <p className="tabular text-sm font-semibold">{nf.format(row.avg_likes)}</p>
+                      <p className="text-[11px] text-muted-foreground">평균 좋아요</p>
+                    </div>
+                    <div>
+                      <p className="tabular text-sm font-semibold">{nf.format(row.avg_comments)}</p>
+                      <p className="text-[11px] text-muted-foreground">평균 댓글</p>
+                    </div>
                   </div>
-                  <div>
-                    <p
-                      className={cn(
-                        "tabular flex items-center justify-center gap-1 text-sm font-semibold",
-                        tier === "high"
-                          ? "text-accent"
-                          : tier === "mid"
-                            ? "text-foreground"
-                            : "text-muted-foreground",
-                      )}
-                    >
-                      {tier === "high" && <Sparkles className="size-3" />}
-                      {er.toFixed(2)}%
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">참여율</p>
-                  </div>
+                  <p className="mt-1.5 text-[10px] text-muted-foreground/80">최근 게시글 9개 기준</p>
                 </div>
 
                 {row.categories.length > 0 && (
