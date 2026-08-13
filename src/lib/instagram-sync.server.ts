@@ -27,6 +27,7 @@ export async function persistProfiles(
 
     if (cached) patch["photo_url"] = cached;
     else if (p.photo_url) patch["photo_url"] = p.photo_url;
+    if (p.display_name) patch["display_name"] = p.display_name;
     if (p.bio) patch["bio"] = p.bio;
     if (p.followers > 0) patch["followers"] = p.followers;
     if (p.avg_likes > 0) patch["avg_likes"] = p.avg_likes;

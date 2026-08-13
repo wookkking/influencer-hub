@@ -59,7 +59,11 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
       return (a.followers ?? Number.MAX_SAFE_INTEGER) - (b.followers ?? Number.MAX_SAFE_INTEGER);
     });
     // 프로필 검증에서 탈락한 후보를 보충할 수 있도록 요청 수보다 넉넉히 확인한다.
-    const handles = ordered.slice(0, Math.max(data.limit * 5, 100)).map((c) => c.handle);
+    const selectedCandidates = ordered.slice(0, Math.max(data.limit * 5, 100));
+    const handles = selectedCandidates.map((c) => c.handle);
+    const koreanCandidateHandles = new Set(
+      selectedCandidates.filter((candidate) => candidate.koreanScore > 0).map((candidate) => candidate.handle.toLowerCase()),
+    );
 
     if (!handles.length) {
       return {
@@ -70,6 +74,7 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
         updated: 0,
         accounts: [] as string[],
         failed: [] as string[],
+        rejectedLanguage: 0,
       };
     }
 
@@ -83,6 +88,7 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
     let created = 0;
     let updated = 0;
     let skippedOverLimit = 0;
+    let rejectedLanguage = 0;
     const accounts: string[] = [];
     const failed: string[] = [];
 
@@ -105,8 +111,12 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
             if (!ok) skippedOverLimit += 1;
             return ok;
           })
-          .filter((p) => data.platform !== "인스타" || isKoreanProfile(p))
-          .filter((p) => p.last_post_date != null)
+          .filter((p) => {
+            if (data.platform !== "인스타") return true;
+            const korean = isKoreanProfile(p) || koreanCandidateHandles.has(p.account.toLowerCase());
+            if (!korean) rejectedLanguage += 1;
+            return korean;
+          })
           .slice(0, data.limit - created - updated);
         if (profiles.length) {
           const results = await persistProfiles(
@@ -137,5 +147,6 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
       updated,
       accounts,
       failed,
+      rejectedLanguage,
     };
   });
