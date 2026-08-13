@@ -25,7 +25,7 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
     if (roleError) throw roleError;
     if (!adminRow) throw new Error("관리자만 사용할 수 있습니다.");
 
-    const { discoverHandlesByHashtag, discoverHandlesByKeyword } = await import("./discover.server");
+    const { discoverHandlesByHashtag, discoverHandlesByKeyword, isKoreanProfile } = await import("./discover.server");
     const { persistProfiles } = await import("./instagram-sync.server");
     const instagram = await import("./instagram.server");
     const social = await import("./social.server");
@@ -86,12 +86,6 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
     const accounts: string[] = [];
     const failed: string[] = [];
 
-    const hasKorean = (value: string | null | undefined) => /[가-힣]/.test(value ?? "");
-    const isKoreanProfile = (profile: (typeof all)[number]) =>
-      hasKorean(profile.display_name) ||
-      hasKorean(profile.bio) ||
-      (profile.recent_captions ?? []).some(hasKorean);
-
     for (let i = 0; i < handles.length && created + updated < data.limit; i += 20) {
       const batch = handles.slice(i, i + 20);
       try {
@@ -102,7 +96,7 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
             if (!ok) skippedOverLimit += 1;
             return ok;
           })
-          .filter(isKoreanProfile)
+          .filter((p) => data.platform !== "인스타" || isKoreanProfile(p))
           .filter((p) => p.last_post_date != null)
           .slice(0, data.limit - created - updated);
         if (profiles.length) {

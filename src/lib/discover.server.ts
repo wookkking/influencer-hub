@@ -32,6 +32,18 @@ export type DiscoveredCandidate = {
 
 const hasKorean = (value: string | undefined) => /[가-힣]/.test(value ?? "");
 
+export function isKoreanProfile(profile: {
+  display_name?: string | null;
+  bio?: string | null;
+  recent_captions?: string[];
+}): boolean {
+  return (
+    hasKorean(profile.display_name ?? undefined) ||
+    hasKorean(profile.bio ?? undefined) ||
+    (profile.recent_captions ?? []).some((caption) => hasKorean(caption))
+  );
+}
+
 /** 해시태그로 게시물을 훑어 고유 계정 후보를 돌려준다. (팔로워 정보 있으면 함께) */
 export async function discoverHandlesByHashtag(
   platform: "인스타" | "틱톡" | "유튜브",
