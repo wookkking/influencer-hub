@@ -36,6 +36,7 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
   const [platform, setPlatform] = useState<Platform>("인스타");
   const [raw, setRaw] = useState("광고");
   const [limit, setLimit] = useState("30");
+  const [maxFollowers, setMaxFollowers] = useState("10000");
   const run = useServerFn(discoverInfluencersByHashtag);
 
   const hashtags = raw
@@ -46,8 +47,17 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
 
   const mutation = useMutation({
     mutationFn: () =>
-      run({ data: { platform, hashtags, limit: Number(limit) } }) as Promise<{
+      run({
+        data: {
+          platform,
+          hashtags,
+          limit: Number(limit),
+          maxFollowers: maxFollowers === "all" ? null : Number(maxFollowers),
+        },
+      }) as Promise<{
         discovered: number;
+        duplicates: number;
+        overLimit: number;
         created: number;
         updated: number;
         accounts: string[];
@@ -55,12 +65,13 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
       }>,
     onSuccess: (res) => {
       toast.success(
-        `자동 탐색 완료 · 발견 ${res.discovered}명, 신규 ${res.created}명, 갱신 ${res.updated}명`,
+        `자동 탐색 완료 · 발견 ${res.discovered}명, 신규 ${res.created}명, 갱신 ${res.updated}명 (중복 제외 ${res.duplicates}명)`,
       );
       onDone();
     },
     onError: (e: Error) => toast.error(e.message || "자동 탐색에 실패했습니다."),
   });
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => !mutation.isPending && onOpenChange(o)}>
