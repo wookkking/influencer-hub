@@ -16,22 +16,35 @@ type IgPost = {
   author_username?: string;
   ownerUsername?: string;
   owner?: { username?: string };
+  author_follower_count?: number;
 };
-type TtPost = { authorMeta?: { name?: string } };
-type YtItem = { channelUsername?: string; channelName?: string };
+type TtPost = { authorMeta?: { name?: string; fans?: number } };
+type YtItem = { channelUsername?: string; channelName?: string; numberOfSubscribers?: number };
 
+export type DiscoveredCandidate = { handle: string; followers: number | null };
 
-/** 해시태그로 게시물을 훑어 고유 계정 목록을 돌려준다. */
+/** 해시태그로 게시물을 훑어 고유 계정 후보를 돌려준다. (팔로워 정보 있으면 함께) */
 export async function discoverHandlesByHashtag(
   platform: "인스타" | "틱톡" | "유튜브",
   tags: string[],
   limit: number,
-): Promise<string[]> {
+): Promise<DiscoveredCandidate[]> {
   const hashtags = Array.from(new Set(tags.map(normalizeTag).filter(Boolean)));
   if (!hashtags.length) return [];
 
-  const perTag = Math.max(20, Math.ceil(limit / hashtags.length) * 3);
-  const found = new Set<string>();
+  // 중복·기존 계정·팔로워 필터로 많이 걸러지므로 넉넉히 훑는다.
+  const perTag = Math.min(400, Math.max(60, limit * 8));
+  const found = new Map<string, number | null>();
+
+  const add = (raw: string | undefined, followers?: number | null) => {
+    const handle = (raw ?? "").replace(/^@/, "").trim();
+    if (!handle) return;
+    const key = handle.toLowerCase();
+    const prev = found.get(key);
+    if (prev === undefined || (prev == null && followers != null)) {
+      found.set(key, followers ?? null);
+    }
+  };
 
   if (platform === "인스타") {
     const items = await runApifyActor<IgPost>(
@@ -45,10 +58,11 @@ export async function discoverHandlesByHashtag(
       perTag * hashtags.length,
     );
     for (const it of items) {
-      const u = it.author_username ?? it.ownerUsername ?? it.owner?.username;
-      if (u) found.add(u.replace(/^@/, "").trim());
+      add(
+        it.author_username ?? it.ownerUsername ?? it.owner?.username,
+        typeof it.author_follower_count === "number" ? it.author_follower_count : null,
+      );
     }
-
   } else if (platform === "틱톡") {
     const items = await runApifyActor<TtPost>(
       TIKTOK_ACTOR,
@@ -62,8 +76,7 @@ export async function discoverHandlesByHashtag(
       perTag * hashtags.length,
     );
     for (const it of items) {
-      const u = it.authorMeta?.name;
-      if (u) found.add(u);
+      add(it.authorMeta?.name, typeof it.authorMeta?.fans === "number" ? it.authorMeta.fans : null);
     }
   } else {
     const items = await runApifyActor<YtItem>(
@@ -77,10 +90,13 @@ export async function discoverHandlesByHashtag(
       perTag * hashtags.length,
     );
     for (const it of items) {
-      const u = (it.channelUsername ?? it.channelName ?? "").replace(/^@/, "").trim();
-      if (u) found.add(u);
+      add(
+        it.channelUsername ?? it.channelName,
+        typeof it.numberOfSubscribers === "number" ? it.numberOfSubscribers : null,
+      );
     }
   }
 
-  return Array.from(found).slice(0, limit);
+  return Array.from(found.entries()).map(([handle, followers]) => ({ handle, followers }));
 }
+
