@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CheckCircle2, List, Plus, RotateCcw, Rows3, Search, X } from "lucide-react";
@@ -45,6 +46,10 @@ import {
 } from "@/lib/influencers";
 
 export const Route = createFileRoute("/_authenticated/board")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    campaign: typeof search["campaign"] === "string" ? (search["campaign"] as string) : undefined,
+  }),
+
   head: () => ({
     meta: [
       { title: "내 캠페인 · 리치보드" },
@@ -102,6 +107,18 @@ function BoardPage() {
   /** 진행 상태 분류: 진행중 / 완료 / 전체 */
   const [phase, setPhase] = usePersistedState<"active" | "done" | "all">("board:phase", "active");
   const [q, setQ] = useState("");
+
+  // 탐색 페이지에서 캠페인 배지를 눌러 넘어온 경우 해당 캠페인만 선택해 보여준다.
+  const { campaign: campaignParam } = Route.useSearch();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!campaignParam) return;
+    setSelectedIds([campaignParam]);
+    setPhase("all");
+    setQ("");
+    navigate({ to: "/board", search: { campaign: undefined }, replace: true });
+  }, [campaignParam, navigate, setSelectedIds, setPhase]);
+
 
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState<string>("default");
