@@ -39,7 +39,7 @@ export async function persistProfiles(
     const { data: existing, error: findError } = await client
       .from("influencers")
       .select("id")
-      .eq("platform", "인스타")
+      .eq("platform", platform)
       .ilike("account", p.account)
       .maybeSingle();
     if (findError) throw findError;
@@ -51,7 +51,7 @@ export async function persistProfiles(
     } else {
       const { error } = await client.from("influencers").insert({
         ...patch,
-        platform: "인스타",
+        platform,
         account: p.account,
         categories: [],
         created_by: createdBy,
