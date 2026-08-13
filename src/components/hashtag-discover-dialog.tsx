@@ -36,6 +36,7 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
   const [platform, setPlatform] = useState<Platform>("인스타");
   const [raw, setRaw] = useState("광고");
   const [limit, setLimit] = useState("30");
+  const [maxFollowers, setMaxFollowers] = useState("10000");
   const run = useServerFn(discoverInfluencersByHashtag);
 
   const hashtags = raw
@@ -46,8 +47,17 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
 
   const mutation = useMutation({
     mutationFn: () =>
-      run({ data: { platform, hashtags, limit: Number(limit) } }) as Promise<{
+      run({
+        data: {
+          platform,
+          hashtags,
+          limit: Number(limit),
+          maxFollowers: maxFollowers === "all" ? null : Number(maxFollowers),
+        },
+      }) as Promise<{
         discovered: number;
+        duplicates: number;
+        overLimit: number;
         created: number;
         updated: number;
         accounts: string[];
@@ -55,12 +65,13 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
       }>,
     onSuccess: (res) => {
       toast.success(
-        `자동 탐색 완료 · 발견 ${res.discovered}명, 신규 ${res.created}명, 갱신 ${res.updated}명`,
+        `자동 탐색 완료 · 발견 ${res.discovered}명, 신규 ${res.created}명, 갱신 ${res.updated}명 (중복 제외 ${res.duplicates}명)`,
       );
       onDone();
     },
     onError: (e: Error) => toast.error(e.message || "자동 탐색에 실패했습니다."),
   });
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => !mutation.isPending && onOpenChange(o)}>
@@ -69,7 +80,8 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
           <DialogTitle>해시태그로 자동 탐색</DialogTitle>
           <DialogDescription>
             #광고 처럼 해시태그를 입력하면 해당 게시물 작성자를 훑어 계정 정보를 정리하고 인플루언서
-            탐색 목록에 자동으로 추가합니다. (팔로워 수 조건 없음)
+            탐색 목록에 자동으로 추가합니다. 중복 계정은 제외됩니다.
+
           </DialogDescription>
         </DialogHeader>
 
@@ -116,11 +128,36 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
           </p>
         </div>
 
+        <div className="space-y-2">
+          <Label>팔로워 상한</Label>
+          <Select
+            value={maxFollowers}
+            onValueChange={setMaxFollowers}
+            disabled={mutation.isPending}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="5000">5천명 이하 (나노)</SelectItem>
+              <SelectItem value="10000">1만명 이하 (마이크로)</SelectItem>
+              <SelectItem value="50000">5만명 이하</SelectItem>
+              <SelectItem value="100000">10만명 이하</SelectItem>
+              <SelectItem value="all">제한 없음</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            상한을 두면 팔로워가 적은 계정부터 우선 수집합니다. 이미 등록된 계정은 자동으로
+            제외됩니다.
+          </p>
+        </div>
+
         {mutation.data && (
           <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs">
             <p className="font-medium text-foreground">
               발견 {mutation.data.discovered}명 · 신규 {mutation.data.created}명 · 갱신{" "}
-              {mutation.data.updated}명
+              {mutation.data.updated}명 · 중복 제외 {mutation.data.duplicates}명
+              {mutation.data.overLimit ? ` · 팔로워 초과 ${mutation.data.overLimit}명` : ""}
               {mutation.data.failed.length ? ` · 실패 ${mutation.data.failed.length}명` : ""}
             </p>
             {mutation.data.accounts.length > 0 && (
@@ -130,6 +167,7 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
             )}
           </div>
         )}
+
 
         <DialogFooter>
           <Button
