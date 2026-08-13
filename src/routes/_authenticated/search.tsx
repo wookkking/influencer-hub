@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { refreshAllInstagramProfiles } from "@/lib/instagram-refresh.functions";
 
@@ -597,7 +597,11 @@ function SearchPage() {
                     campaigns={campaigns.data ?? []}
                     selectedIds={groupsOf.get(row.id) ?? []}
                     onToggle={(cid, next) => toggleGroup(row.id, cid, next)}
+                    onOpenCampaign={(cid) =>
+                      navigate({ to: "/board", search: { campaign: cid } })
+                    }
                   />
+
 
                   {isAdmin && (
                     <div className="flex justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100">
