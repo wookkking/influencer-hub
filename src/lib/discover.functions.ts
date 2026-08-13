@@ -2,19 +2,19 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const inputSchema = z.object({
-  platform: z.enum(["인스타", "틱톡", "유튜브"]),
-  /** hashtag = 해시태그 게시물 작성자, keyword = 검색어로 노출되는 계정 */
-  mode: z.enum(["hashtag", "keyword"]).default("hashtag"),
-  hashtags: z.array(z.string().trim().min(1).max(60)).min(1).max(5),
-  limit: z.number().int().min(1).max(100).default(30),
-  /** 팔로워 상한 (null = 제한 없음) */
-  maxFollowers: z.number().int().min(100).max(10_000_000).nullable().default(null),
-});
-
 export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => inputSchema.parse(input))
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        platform: z.enum(["인스타", "틱톡", "유튜브"]),
+        mode: z.enum(["hashtag", "keyword"]).default("hashtag"),
+        hashtags: z.array(z.string().trim().min(1).max(60)).min(1).max(5),
+        limit: z.number().int().min(1).max(100).default(30),
+        maxFollowers: z.number().int().min(100).max(10_000_000).nullable().default(null),
+      })
+      .parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { data: adminRow, error: roleError } = await context.supabase
       .from("user_roles")
