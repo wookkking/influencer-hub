@@ -14,9 +14,11 @@ type Props = {
   campaigns: Campaign[];
   selectedIds: string[];
   onToggle: (campaignId: string, next: boolean) => void;
+  /** 지정된 캠페인 배지를 누르면 해당 캠페인 보드로 이동 */
+  onOpenCampaign?: (campaignId: string) => void;
 };
 
-export function CampaignPicker({ campaigns, selectedIds, onToggle }: Props) {
+export function CampaignPicker({ campaigns, selectedIds, onToggle, onOpenCampaign }: Props) {
   const selected = campaigns.filter((c) => selectedIds.includes(c.id));
 
   return (
@@ -36,7 +38,28 @@ export function CampaignPicker({ campaigns, selectedIds, onToggle }: Props) {
               <Badge
                 key={c.id}
                 variant="outline"
-                className={cn("text-[11px] font-normal", colorClass[c.color] ?? colorClass['default'])}
+                role={onOpenCampaign ? "link" : undefined}
+                tabIndex={onOpenCampaign ? 0 : undefined}
+                title={onOpenCampaign ? `${c.name} 캠페인으로 이동` : undefined}
+                onClick={(e) => {
+                  if (!onOpenCampaign) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onOpenCampaign(c.id);
+                }}
+                onKeyDown={(e) => {
+                  if (!onOpenCampaign) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onOpenCampaign(c.id);
+                  }
+                }}
+                className={cn(
+                  "text-[11px] font-normal",
+                  colorClass[c.color] ?? colorClass['default'],
+                  onOpenCampaign && "cursor-pointer hover:underline",
+                )}
               >
                 {c.name}
               </Badge>
@@ -44,6 +67,7 @@ export function CampaignPicker({ campaigns, selectedIds, onToggle }: Props) {
           )}
         </button>
       </PopoverTrigger>
+
       <PopoverContent align="start" className="w-56 p-1">
         {campaigns.length === 0 ? (
           <p className="p-3 text-xs text-muted-foreground">
