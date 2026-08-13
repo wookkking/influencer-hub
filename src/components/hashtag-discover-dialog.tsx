@@ -1,0 +1,160 @@
+import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Loader2, Radar } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { discoverInfluencersByHashtag } from "@/lib/discover.functions";
+
+type Platform = "인스타" | "틱톡" | "유튜브";
+
+type Props = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDone: () => void;
+};
+
+export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
+  const [platform, setPlatform] = useState<Platform>("인스타");
+  const [raw, setRaw] = useState("광고");
+  const [limit, setLimit] = useState("30");
+  const run = useServerFn(discoverInfluencersByHashtag);
+
+  const hashtags = raw
+    .split(/[\s,#\n]+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 5);
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      run({ data: { platform, hashtags, limit: Number(limit) } }) as Promise<{
+        discovered: number;
+        created: number;
+        updated: number;
+        accounts: string[];
+        failed: string[];
+      }>,
+    onSuccess: (res) => {
+      toast.success(
+        `자동 탐색 완료 · 발견 ${res.discovered}명, 신규 ${res.created}명, 갱신 ${res.updated}명`,
+      );
+      onDone();
+    },
+    onError: (e: Error) => toast.error(e.message || "자동 탐색에 실패했습니다."),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !mutation.isPending && onOpenChange(o)}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>해시태그로 자동 탐색</DialogTitle>
+          <DialogDescription>
+            #광고 처럼 해시태그를 입력하면 해당 게시물 작성자를 훑어 계정 정보를 정리하고 인플루언서
+            탐색 목록에 자동으로 추가합니다. (팔로워 수 조건 없음)
+          </DialogDescription>
+        </DialogHeader>
+
+        <Tabs value={platform} onValueChange={(v) => setPlatform(v as Platform)}>
+          <TabsList className="w-full">
+            {(["인스타", "틱톡", "유튜브"] as Platform[]).map((p) => (
+              <TabsTrigger key={p} value={p} className="flex-1" disabled={mutation.isPending}>
+                {p}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
+        <div className="space-y-2">
+          <Label htmlFor="tags">해시태그 (최대 5개)</Label>
+          <Input
+            id="tags"
+            value={raw}
+            placeholder="광고, 협찬, 내돈내산"
+            onChange={(e) => setRaw(e.target.value)}
+            disabled={mutation.isPending}
+          />
+          <p className="text-xs text-muted-foreground">
+            인식됨: {hashtags.map((t) => `#${t}`).join(" ") || "없음"}
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>수집할 계정 수</Label>
+          <Select value={limit} onValueChange={setLimit} disabled={mutation.isPending}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {["10", "30", "50", "100"].map((n) => (
+                <SelectItem key={n} value={n}>
+                  {n}명
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            계정 수가 많을수록 수집에 몇 분까지 걸릴 수 있습니다.
+          </p>
+        </div>
+
+        {mutation.data && (
+          <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs">
+            <p className="font-medium text-foreground">
+              발견 {mutation.data.discovered}명 · 신규 {mutation.data.created}명 · 갱신{" "}
+              {mutation.data.updated}명
+              {mutation.data.failed.length ? ` · 실패 ${mutation.data.failed.length}명` : ""}
+            </p>
+            {mutation.data.accounts.length > 0 && (
+              <p className="mt-1 line-clamp-3 text-muted-foreground">
+                {mutation.data.accounts.join(", ")}
+              </p>
+            )}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={mutation.isPending}
+          >
+            닫기
+          </Button>
+          <Button
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending || hashtags.length === 0}
+          >
+            {mutation.isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" /> 탐색 중…
+              </>
+            ) : (
+              <>
+                <Radar className="size-4" /> 자동 탐색 시작
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
