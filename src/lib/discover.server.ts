@@ -36,13 +36,19 @@ export async function discoverHandlesByHashtag(
   if (platform === "인스타") {
     const items = await runApifyActor<IgPost>(
       IG_HASHTAG_ACTOR,
-      { hashtags, resultsType: "posts", resultsLimit: perTag },
+      {
+        hashtags,
+        resultsLimit: perTag,
+        mediaType: "all",
+        datePosted: "last-month",
+      },
       perTag * hashtags.length,
     );
     for (const it of items) {
-      const u = it.ownerUsername ?? it.owner?.username;
-      if (u) found.add(u);
+      const u = it.author_username ?? it.ownerUsername ?? it.owner?.username;
+      if (u) found.add(u.replace(/^@/, "").trim());
     }
+
   } else if (platform === "틱톡") {
     const items = await runApifyActor<TtPost>(
       TIKTOK_ACTOR,
