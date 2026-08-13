@@ -14,7 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { importInstagramProfiles } from "@/lib/instagram.functions";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { importSocialProfiles } from "@/lib/social.functions";
 
 type Props = {
   open: boolean;
@@ -22,12 +23,30 @@ type Props = {
   onDone: () => void;
 };
 
+type Platform = "인스타" | "틱톡" | "유튜브";
+
+const HINTS: Record<Platform, { placeholder: string; help: string }> = {
+  인스타: {
+    placeholder: "nasa\n@natgeo\nhttps://www.instagram.com/lovable",
+    help: "최근 릴스 9개(고정 게시물 제외) 기준으로 평균 지표를 계산합니다.",
+  },
+  틱톡: {
+    placeholder: "@charlidamelio\nhttps://www.tiktok.com/@khaby.lame",
+    help: "최근 영상 9개(고정 게시물 제외) 기준으로 평균 지표를 계산합니다.",
+  },
+  유튜브: {
+    placeholder: "@MrBeast\nhttps://www.youtube.com/@ChannelName",
+    help: "최근 쇼츠 9개 기준으로 평균 지표를 계산합니다.",
+  },
+};
+
 export function InstagramImportDialog({ open, onOpenChange, onDone }: Props) {
   const [raw, setRaw] = useState("");
-  const runImport = useServerFn(importInstagramProfiles);
+  const [platform, setPlatform] = useState<Platform>("인스타");
+  const runImport = useServerFn(importSocialProfiles);
 
   const mutation = useMutation({
-    mutationFn: async (handles: string[]) => runImport({ data: { handles } }),
+    mutationFn: async (handles: string[]) => runImport({ data: { platform, handles } }),
     onSuccess: (res) => {
       const created = res.results.filter((r) => r.action === "created").length;
       const updated = res.results.filter((r) => r.action === "updated").length;
@@ -51,24 +70,41 @@ export function InstagramImportDialog({ open, onOpenChange, onDone }: Props) {
     <Dialog open={open} onOpenChange={(o) => !mutation.isPending && onOpenChange(o)}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>인스타그램에서 가져오기</DialogTitle>
+          <DialogTitle>SNS에서 가져오기</DialogTitle>
           <DialogDescription>
-            계정 ID나 프로필 링크를 줄바꿈 또는 쉼표로 구분해 입력하세요. 최대 20개까지 한 번에
-            수집합니다. (팔로워·평균 좋아요·댓글·프로필 사진·소개글 자동 저장)
+            플랫폼을 고르고 계정 ID나 프로필 링크를 줄바꿈 또는 쉼표로 구분해 입력하세요. 최대
+            20개까지 한 번에 수집합니다. (팔로워·평균 조회수·좋아요·댓글·프로필 사진·소개글 자동
+            저장)
           </DialogDescription>
         </DialogHeader>
 
+        <Tabs value={platform} onValueChange={(v) => setPlatform(v as Platform)}>
+          <TabsList className="w-full">
+            <TabsTrigger value="인스타" className="flex-1" disabled={mutation.isPending}>
+              인스타
+            </TabsTrigger>
+            <TabsTrigger value="틱톡" className="flex-1" disabled={mutation.isPending}>
+              틱톡
+            </TabsTrigger>
+            <TabsTrigger value="유튜브" className="flex-1" disabled={mutation.isPending}>
+              유튜브
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         <div className="space-y-2">
-          <Label htmlFor="ig-handles">계정 목록</Label>
+          <Label htmlFor="sns-handles">계정 목록</Label>
           <Textarea
-            id="ig-handles"
+            id="sns-handles"
             rows={6}
-            placeholder={"nasa\n@natgeo\nhttps://www.instagram.com/lovable"}
+            placeholder={HINTS[platform].placeholder}
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             disabled={mutation.isPending}
           />
-          <p className="text-xs text-muted-foreground">{handles.length}개 계정 인식됨</p>
+          <p className="text-xs text-muted-foreground">
+            {handles.length}개 계정 인식됨 · {HINTS[platform].help}
+          </p>
         </div>
 
         <DialogFooter>
