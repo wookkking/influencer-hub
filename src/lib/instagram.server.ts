@@ -54,7 +54,7 @@ export function normalizeHandle(raw: string): string {
   return v.replace(/^@/, "").replace(/\/+$/, "").trim();
 }
 
-/** 평균 계산에 사용할 최근 게시글 수 */
+/** 평균 계산에 사용할 최근 릴스 수 */
 const RECENT_POSTS = 9;
 
 function average(values: number[]): number {
@@ -62,10 +62,26 @@ function average(values: number[]): number {
   return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
 }
 
+/** 고정 게시물 제외 */
+function isPinnedPost(p: ApifyPost): boolean {
+  return p.isPinned === true || p.pinned === true;
+}
+
+/** 릴스(동영상) 게시물만 인정 */
+function isReel(p: ApifyPost): boolean {
+  const t = (p.type ?? "").toLowerCase();
+  const pt = (p.productType ?? "").toLowerCase();
+  return (
+    pt === "clips" || t === "video" || p.isVideo === true || !!p.videoUrl || (p.videoDuration ?? 0) > 0
+  );
+}
+
 function mapItem(item: ApifyItem): ScrapedProfile | null {
   if (!item.username) return null;
-  // 최근 게시글 기준으로 평균을 계산 (최신순 정렬 후 상위 9개)
-  const posts = [...(item.latestPosts ?? [])]
+  // 최근 업로드 릴스 기준으로 평균을 계산 (고정 게시물 제외, 최신순 상위 9개)
+  const all = [...(item.latestPosts ?? [])].filter((p) => !isPinnedPost(p));
+  const reels = all.filter(isReel);
+  const posts = reels
     .sort((a, b) => (b.timestamp ?? "").localeCompare(a.timestamp ?? ""))
     .slice(0, RECENT_POSTS);
   const likes = posts.map((p) => p.likesCount ?? 0).filter((n) => n > 0);
@@ -73,11 +89,13 @@ function mapItem(item: ApifyItem): ScrapedProfile | null {
   const views = posts
     .map((p) => p.videoPlayCount ?? p.videoViewCount ?? p.playCount ?? p.viewCount ?? 0)
     .filter((n) => n > 0);
-  const timestamps = posts
+  // 최근 업로드일은 고정 게시물을 제외한 전체 게시물 기준
+  const timestamps = all
     .map((p) => p.timestamp)
     .filter((t): t is string => !!t)
     .sort();
   const latest = timestamps.at(-1);
+
 
   return {
     account: item.username,
