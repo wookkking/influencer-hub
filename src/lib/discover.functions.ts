@@ -4,6 +4,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const inputSchema = z.object({
   platform: z.enum(["인스타", "틱톡", "유튜브"]),
+  /** hashtag = 해시태그 게시물 작성자, keyword = 검색어로 노출되는 계정 */
+  mode: z.enum(["hashtag", "keyword"]).default("hashtag"),
   hashtags: z.array(z.string().trim().min(1).max(60)).min(1).max(5),
   limit: z.number().int().min(1).max(100).default(30),
   /** 팔로워 상한 (null = 제한 없음) */
