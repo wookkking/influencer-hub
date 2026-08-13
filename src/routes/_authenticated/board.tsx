@@ -116,7 +116,7 @@ function BoardPage() {
     setSelectedIds([campaignParam]);
     setPhase("all");
     setQ("");
-    navigate({ to: "/board", search: {}, replace: true });
+    navigate({ to: "/board", search: { campaign: undefined }, replace: true });
   }, [campaignParam, navigate, setSelectedIds, setPhase]);
 
 
