@@ -51,7 +51,7 @@ function expandKoreanTerms(values: string[]): string[] {
   for (const value of values) {
     for (const related of KOREAN_DISCOVERY_EXPANSIONS[value] ?? []) expanded.add(related);
   }
-  return Array.from(expanded).slice(0, 15);
+  return Array.from(expanded).slice(0, 8);
 }
 
 export function isKoreanProfile(profile: {
@@ -76,7 +76,7 @@ export async function discoverHandlesByHashtag(
   if (!hashtags.length) return [];
 
   // 중복·기존 계정·팔로워 필터로 많이 걸러지므로 넉넉히 훑는다.
-  const perTag = Math.min(400, Math.max(60, limit * 8));
+  const perTag = Math.min(80, Math.max(30, Math.ceil((limit * 10) / hashtags.length)));
   const found = new Map<string, { followers: number | null; koreanScore: number }>();
 
   const add = (raw: string | undefined, followers?: number | null, text?: string) => {
@@ -164,7 +164,7 @@ export async function discoverHandlesByKeyword(
   );
   if (!terms.length) return [];
 
-  const perTerm = Math.min(300, Math.max(120, limit * 10));
+  const perTerm = Math.min(80, Math.max(30, Math.ceil((limit * 10) / terms.length)));
   const found = new Map<string, { followers: number | null; koreanScore: number }>();
 
   const add = (raw: string | undefined, followers?: number | null, text?: string) => {
