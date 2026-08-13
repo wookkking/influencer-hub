@@ -264,7 +264,7 @@ function SearchPage() {
               {refreshAll.isPending ? "갱신 중…" : "전체 지표 갱신"}
             </Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}>
-              <Download className="size-4" /> 인스타 가져오기
+              <Download className="size-4" /> SNS 가져오기
             </Button>
             <Button
               onClick={() => {

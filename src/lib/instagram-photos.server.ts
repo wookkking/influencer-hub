@@ -14,8 +14,13 @@ export async function cacheProfilePhoto(
   const key = `${account.toLowerCase().replace(/[^a-z0-9._-]/g, "_")}.jpg`;
 
   try {
-    const res = await fetch(remoteUrl, { headers: { referer: "https://www.instagram.com/" } });
+    const isInstagram = /instagram|cdninstagram|fbcdn/i.test(remoteUrl);
+    const res = await fetch(
+      remoteUrl,
+      isInstagram ? { headers: { referer: "https://www.instagram.com/" } } : {},
+    );
     if (!res.ok) return null;
+
     const bytes = new Uint8Array(await res.arrayBuffer());
     if (!bytes.length) return null;
 
