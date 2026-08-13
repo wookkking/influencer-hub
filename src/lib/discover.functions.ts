@@ -2,19 +2,19 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const inputSchema = z.object({
-  platform: z.enum(["인스타", "틱톡", "유튜브"]),
-  /** hashtag = 해시태그 게시물 작성자, keyword = 검색어로 노출되는 계정 */
-  mode: z.enum(["hashtag", "keyword"]).default("hashtag"),
-  hashtags: z.array(z.string().trim().min(1).max(60)).min(1).max(5),
-  limit: z.number().int().min(1).max(100).default(30),
-  /** 팔로워 상한 (null = 제한 없음) */
-  maxFollowers: z.number().int().min(100).max(10_000_000).nullable().default(null),
-});
-
 export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => inputSchema.parse(input))
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        platform: z.enum(["인스타", "틱톡", "유튜브"]),
+        mode: z.enum(["hashtag", "keyword"]).default("hashtag"),
+        hashtags: z.array(z.string().trim().min(1).max(60)).min(1).max(5),
+        limit: z.number().int().min(1).max(100).default(30),
+        maxFollowers: z.number().int().min(100).max(10_000_000).nullable().default(null),
+      })
+      .parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { data: adminRow, error: roleError } = await context.supabase
       .from("user_roles")
@@ -25,7 +25,7 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
     if (roleError) throw roleError;
     if (!adminRow) throw new Error("관리자만 사용할 수 있습니다.");
 
-    const { discoverHandlesByHashtag, discoverHandlesByKeyword } = await import("./discover.server");
+    const { discoverHandlesByHashtag, discoverHandlesByKeyword, isKoreanProfile } = await import("./discover.server");
     const { persistProfiles } = await import("./instagram-sync.server");
     const instagram = await import("./instagram.server");
     const social = await import("./social.server");
@@ -54,8 +54,12 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
     const unknown = max == null ? [] : eligible.filter((c) => c.followers == null);
     const overLimit = max == null ? 0 : eligible.length - withinRange.length - unknown.length;
 
-    const ordered = [...withinRange, ...unknown].sort((a, b) => (a.followers ?? 0) - (b.followers ?? 0));
-    const handles = ordered.slice(0, data.limit).map((c) => c.handle);
+    const ordered = [...withinRange, ...unknown].sort((a, b) => {
+      if (a.koreanScore !== b.koreanScore) return b.koreanScore - a.koreanScore;
+      return (a.followers ?? Number.MAX_SAFE_INTEGER) - (b.followers ?? Number.MAX_SAFE_INTEGER);
+    });
+    // 프로필 검증에서 탈락한 후보를 보충할 수 있도록 요청 수보다 넉넉히 확인한다.
+    const handles = ordered.slice(0, Math.max(data.limit * 5, 100)).map((c) => c.handle);
 
     if (!handles.length) {
       return {
@@ -82,19 +86,28 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
     const accounts: string[] = [];
     const failed: string[] = [];
 
-    for (let i = 0; i < handles.length; i += 20) {
+    const scrapeWithRetry = async (batch: string[]) => {
+      try {
+        return await scrape(batch);
+      } catch (firstError) {
+        console.warn("discover batch retry", firstError);
+        return scrape(batch);
+      }
+    };
+
+    for (let i = 0; i < handles.length && created + updated < data.limit; i += 20) {
       const batch = handles.slice(i, i + 20);
       try {
-        const all = await scrape(batch);
-        const profiles =
-          max == null
-            ? all
-            : all.filter((p) => {
-                const f = typeof p.followers === "number" ? p.followers : 0;
-                const ok = f <= max;
-                if (!ok) skippedOverLimit += 1;
-                return ok;
-              });
+        const all = await scrapeWithRetry(batch);
+        const profiles = all
+          .filter((p) => {
+            const ok = max == null || (p.followers > 0 && p.followers <= max);
+            if (!ok) skippedOverLimit += 1;
+            return ok;
+          })
+          .filter((p) => data.platform !== "인스타" || isKoreanProfile(p))
+          .filter((p) => p.last_post_date != null)
+          .slice(0, data.limit - created - updated);
         if (profiles.length) {
           const results = await persistProfiles(
             context.supabase,

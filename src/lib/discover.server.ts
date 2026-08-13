@@ -17,11 +17,32 @@ type IgPost = {
   ownerUsername?: string;
   owner?: { username?: string };
   author_follower_count?: number;
+  caption?: string;
+  text?: string;
+  author_full_name?: string;
 };
 type TtPost = { authorMeta?: { name?: string; fans?: number } };
 type YtItem = { channelUsername?: string; channelName?: string; numberOfSubscribers?: number };
 
-export type DiscoveredCandidate = { handle: string; followers: number | null };
+export type DiscoveredCandidate = {
+  handle: string;
+  followers: number | null;
+  koreanScore: number;
+};
+
+const hasKorean = (value: string | undefined) => /[가-힣]/.test(value ?? "");
+
+export function isKoreanProfile(profile: {
+  display_name?: string | null;
+  bio?: string | null;
+  recent_captions?: string[];
+}): boolean {
+  return (
+    hasKorean(profile.display_name ?? undefined) ||
+    hasKorean(profile.bio ?? undefined) ||
+    (profile.recent_captions ?? []).some((caption) => hasKorean(caption))
+  );
+}
 
 /** 해시태그로 게시물을 훑어 고유 계정 후보를 돌려준다. (팔로워 정보 있으면 함께) */
 export async function discoverHandlesByHashtag(
@@ -34,16 +55,17 @@ export async function discoverHandlesByHashtag(
 
   // 중복·기존 계정·팔로워 필터로 많이 걸러지므로 넉넉히 훑는다.
   const perTag = Math.min(400, Math.max(60, limit * 8));
-  const found = new Map<string, number | null>();
+  const found = new Map<string, { followers: number | null; koreanScore: number }>();
 
-  const add = (raw: string | undefined, followers?: number | null) => {
+  const add = (raw: string | undefined, followers?: number | null, text?: string) => {
     const handle = (raw ?? "").replace(/^@/, "").trim();
     if (!handle) return;
     const key = handle.toLowerCase();
     const prev = found.get(key);
-    if (prev === undefined || (prev == null && followers != null)) {
-      found.set(key, followers ?? null);
-    }
+    found.set(key, {
+      followers: prev?.followers ?? followers ?? null,
+      koreanScore: Math.max(prev?.koreanScore ?? 0, hasKorean(text) ? 2 : 0),
+    });
   };
 
   if (platform === "인스타") {
@@ -51,7 +73,7 @@ export async function discoverHandlesByHashtag(
       IG_HASHTAG_ACTOR,
       {
         hashtags,
-        resultsLimit: perTag,
+        maxPostsPerHashtag: Math.min(500, perTag),
         mediaType: "all",
         datePosted: "last-month",
       },
@@ -61,6 +83,7 @@ export async function discoverHandlesByHashtag(
       add(
         it.author_username ?? it.ownerUsername ?? it.owner?.username,
         typeof it.author_follower_count === "number" ? it.author_follower_count : null,
+        [it.author_full_name, it.caption, it.text].filter(Boolean).join(" "),
       );
     }
   } else if (platform === "틱톡") {
@@ -97,12 +120,17 @@ export async function discoverHandlesByHashtag(
     }
   }
 
-  return Array.from(found.entries()).map(([handle, followers]) => ({ handle, followers }));
+  return Array.from(found.entries()).map(([handle, value]) => ({ handle, ...value }));
 }
 
 const IG_SEARCH_ACTOR = "apify~instagram-search-scraper";
 
-type IgSearchUser = { username?: string; followersCount?: number };
+type IgSearchUser = {
+  username?: string;
+  followersCount?: number;
+  fullName?: string;
+  biography?: string;
+};
 
 /** 검색 키워드(예: "광고")로 계정을 훑어 후보를 돌려준다. 해시태그가 아닌 일반 검색어 기준. */
 export async function discoverHandlesByKeyword(
@@ -113,17 +141,18 @@ export async function discoverHandlesByKeyword(
   const terms = Array.from(new Set(keywords.map((k) => k.trim().replace(/^#/, "")).filter(Boolean)));
   if (!terms.length) return [];
 
-  const perTerm = Math.min(200, Math.max(40, limit * 4));
-  const found = new Map<string, number | null>();
+  const perTerm = Math.min(300, Math.max(120, limit * 10));
+  const found = new Map<string, { followers: number | null; koreanScore: number }>();
 
-  const add = (raw: string | undefined, followers?: number | null) => {
+  const add = (raw: string | undefined, followers?: number | null, text?: string) => {
     const handle = (raw ?? "").replace(/^@/, "").trim();
     if (!handle) return;
     const key = handle.toLowerCase();
     const prev = found.get(key);
-    if (prev === undefined || (prev == null && followers != null)) {
-      found.set(key, followers ?? null);
-    }
+    found.set(key, {
+      followers: prev?.followers ?? followers ?? null,
+      koreanScore: Math.max(prev?.koreanScore ?? 0, hasKorean(text) ? 2 : 0),
+    });
   };
 
   if (platform === "인스타") {
@@ -134,8 +163,21 @@ export async function discoverHandlesByKeyword(
         perTerm,
       );
       for (const it of items) {
-        add(it.username, typeof it.followersCount === "number" ? it.followersCount : null);
+        add(
+          it.username,
+          typeof it.followersCount === "number" ? it.followersCount : null,
+          `${it.fullName ?? ""} ${it.biography ?? ""}`,
+        );
       }
+    }
+    // 계정 검색은 반환량이 적을 수 있어 같은 키워드의 게시물 작성자도 함께 합친다.
+    const postAuthors = await discoverHandlesByHashtag("인스타", terms, limit * 5);
+    for (const candidate of postAuthors) {
+      const prev = found.get(candidate.handle.toLowerCase());
+      found.set(candidate.handle.toLowerCase(), {
+        followers: prev?.followers ?? candidate.followers,
+        koreanScore: Math.max(prev?.koreanScore ?? 0, candidate.koreanScore),
+      });
     }
   } else if (platform === "틱톡") {
     const items = await runApifyActor<TtPost>(
@@ -171,6 +213,6 @@ export async function discoverHandlesByKeyword(
     }
   }
 
-  return Array.from(found.entries()).map(([handle, followers]) => ({ handle, followers }));
+  return Array.from(found.entries()).map(([handle, value]) => ({ handle, ...value }));
 }
 

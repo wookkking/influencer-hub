@@ -8,6 +8,7 @@ const ACTOR_ID = "apify~instagram-profile-scraper";
 
 export type ScrapedProfile = {
   account: string;
+  display_name?: string | null;
   photo_url: string | null;
   profile_url: string;
   bio: string | null;
@@ -16,6 +17,7 @@ export type ScrapedProfile = {
   avg_views: number;
   avg_comments: number;
   last_post_date: string | null;
+  recent_captions?: string[];
 };
 
 type ApifyPost = {
@@ -33,6 +35,7 @@ type ApifyPost = {
   videoViewCount?: number;
   playCount?: number;
   viewCount?: number;
+  caption?: string;
 };
 type ApifyItem = {
   username?: string;
@@ -99,6 +102,7 @@ function mapItem(item: ApifyItem): ScrapedProfile | null {
 
   return {
     account: item.username,
+    display_name: item.fullName?.trim() || null,
     photo_url: item.profilePicUrlHD ?? item.profilePicUrl ?? null,
     profile_url: item.url ?? `https://www.instagram.com/${item.username}`,
     bio: item.biography?.trim() || null,
@@ -107,6 +111,7 @@ function mapItem(item: ApifyItem): ScrapedProfile | null {
     avg_views: average(views),
     avg_comments: average(comments),
     last_post_date: latest ? latest.slice(0, 10) : null,
+    recent_captions: posts.map((p) => p.caption?.trim() ?? "").filter(Boolean),
   };
 }
 
