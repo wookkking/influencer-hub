@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CheckCircle2, List, Plus, RotateCcw, Rows3, Search, X } from "lucide-react";
+import { CheckCircle2, List, Pencil, Plus, RotateCcw, Rows3, Search, X } from "lucide-react";
 
 import { CampaignInfluencerCard } from "@/components/campaign-influencer-card";
 import { CampaignInfluencerRow } from "@/components/campaign-influencer-row";
@@ -25,12 +25,15 @@ import {
   CAMPAIGN_COLORS,
   addToCampaign,
   colorClass,
+  colorDot,
+  colorLabel,
   createCampaign,
   deleteCampaign,
   fetchCampaignMembers,
   fetchCampaigns,
   removeFromCampaign,
   setCampaignCompleted,
+  updateCampaign,
   updateCampaignMember,
   type CampaignMember,
 } from "@/lib/campaigns";
@@ -123,6 +126,7 @@ function BoardPage() {
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState<string>("default");
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<{ id: string; name: string; color: string } | null>(null);
 
   const bySaved = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -255,6 +259,18 @@ function BoardPage() {
       toast.success("캠페인 그룹을 만들었습니다");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "캠페인 생성에 실패했습니다");
+    }
+  }
+
+  async function saveCampaignEdit() {
+    if (!editing || !editing.name.trim()) return;
+    try {
+      await updateCampaign(editing.id, { name: editing.name.trim(), color: editing.color });
+      setEditing(null);
+      await refreshGroups();
+      toast.success("캠페인을 수정했습니다");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "수정에 실패했습니다");
     }
   }
 
@@ -503,6 +519,15 @@ function BoardPage() {
             </button>
             <button
               type="button"
+              aria-label={`${g.name} 이름·색상 수정`}
+              title="이름·색상 수정"
+              onClick={() => setEditing({ id: g.id, name: g.name, color: g.color })}
+              className="absolute -bottom-1.5 -right-1.5 hidden size-4 items-center justify-center rounded-full border border-border bg-background text-muted-foreground group-hover:flex"
+            >
+              <Pencil className="size-2.5" />
+            </button>
+            <button
+              type="button"
               aria-label={`${g.name} 그룹 삭제`}
               onClick={() => removeCampaign(g.id)}
               className="absolute -right-1.5 -top-1.5 hidden size-4 items-center justify-center rounded-full border border-border bg-background text-muted-foreground group-hover:flex"
@@ -544,14 +569,16 @@ function BoardPage() {
                   <button
                     key={c}
                     type="button"
+                    aria-label={colorLabel[c]}
                     onClick={() => setNewColor(c)}
                     className={cn(
-                      "rounded-full border px-3 py-1 text-[11px] capitalize",
+                      "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px]",
                       colorClass[c],
                       newColor === c && "ring-2 ring-primary ring-offset-1 ring-offset-background",
                     )}
                   >
-                    {c}
+                    <span className={cn("size-2 rounded-full", colorDot[c])} />
+                    {colorLabel[c]}
                   </button>
                 ))}
               </div>
@@ -559,6 +586,46 @@ function BoardPage() {
             <DialogFooter>
               <Button onClick={addCampaign} disabled={!newName.trim()}>
                 만들기
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={editing !== null} onOpenChange={(o) => !o && setEditing(null)}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>캠페인 수정</DialogTitle>
+            </DialogHeader>
+            {editing && (
+              <div className="space-y-3">
+                <Input
+                  placeholder="캠페인 이름"
+                  value={editing.name}
+                  onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                />
+                <div className="flex flex-wrap gap-2">
+                  {CAMPAIGN_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      aria-label={colorLabel[c]}
+                      onClick={() => setEditing({ ...editing, color: c })}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px]",
+                        colorClass[c],
+                        editing.color === c && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                      )}
+                    >
+                      <span className={cn("size-2 rounded-full", colorDot[c])} />
+                      {colorLabel[c]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button onClick={saveCampaignEdit} disabled={!editing?.name.trim()}>
+                저장
               </Button>
             </DialogFooter>
           </DialogContent>
