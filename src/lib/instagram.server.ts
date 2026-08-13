@@ -110,6 +110,8 @@ function mapItem(item: ApifyItem): ScrapedProfile | null {
   };
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export async function scrapeInstagramProfiles(handles: string[]): Promise<ScrapedProfile[]> {
   const lovableKey = process.env["LOVABLE_API_KEY"];
   const apifyKey = process.env["APIFY_API_KEY"];
@@ -119,25 +121,58 @@ export async function scrapeInstagramProfiles(handles: string[]): Promise<Scrape
   const usernames = Array.from(new Set(handles.map(normalizeHandle).filter(Boolean)));
   if (!usernames.length) return [];
 
-  const response = await fetch(
-    `${GATEWAY_URL}/acts/${ACTOR_ID}/run-sync-get-dataset-items?timeout=300`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableKey}`,
-        "X-Connection-Api-Key": apifyKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ usernames }),
-    },
-  );
+  const headers = {
+    Authorization: `Bearer ${lovableKey}`,
+    "X-Connection-Api-Key": apifyKey,
+    "Content-Type": "application/json",
+  };
 
-  if (!response.ok) {
-    const body = await response.text();
-    console.error(`Apify request failed [${response.status}]: ${body}`);
-    throw new Error(`인스타그램 수집 실패 [${response.status}]: ${body.slice(0, 300)}`);
+  const fail = async (res: Response, stage: string): Promise<never> => {
+    const body = await res.text();
+    console.error(`Apify ${stage} failed [${res.status}]: ${body}`);
+    throw new Error(`인스타그램 수집 실패 [${res.status}]: ${body.slice(0, 300)}`);
+  };
+
+  // 동기 실행(run-sync)은 게이트웨이 타임아웃(502)이 잦아 비동기 실행 후 폴링한다.
+  const startRes = await fetch(`${GATEWAY_URL}/acts/${ACTOR_ID}/runs`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ usernames, resultsLimit: 30 }),
+  });
+  if (!startRes.ok) await fail(startRes, "run start");
+
+  const started = (await startRes.json()) as { data?: { id?: string; defaultDatasetId?: string } };
+  const runId = started.data?.id;
+  let datasetId = started.data?.defaultDatasetId;
+  if (!runId) throw new Error("인스타그램 수집 실패: 실행 ID를 받지 못했습니다.");
+
+  let status = "READY";
+  for (let i = 0; i < 90; i++) {
+    await sleep(3000);
+    const statusRes = await fetch(`${GATEWAY_URL}/actor-runs/${runId}`, { headers });
+    if (!statusRes.ok) {
+      if (statusRes.status >= 500) continue;
+      await fail(statusRes, "run status");
+    }
+    const info = (await statusRes.json()) as {
+      data?: { status?: string; defaultDatasetId?: string };
+    };
+    status = info.data?.status ?? status;
+    datasetId = info.data?.defaultDatasetId ?? datasetId;
+    if (["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status)) break;
   }
 
-  const items = (await response.json()) as ApifyItem[];
+  if (status !== "SUCCEEDED" && status !== "TIMED-OUT") {
+    throw new Error(`인스타그램 수집 실패: 실행 상태 ${status}`);
+  }
+  if (!datasetId) throw new Error("인스타그램 수집 실패: 데이터셋을 찾을 수 없습니다.");
+
+  const itemsRes = await fetch(`${GATEWAY_URL}/datasets/${datasetId}/items?clean=true&limit=200`, {
+    headers,
+  });
+  if (!itemsRes.ok) await fail(itemsRes, "dataset items");
+
+  const items = (await itemsRes.json()) as ApifyItem[];
   return items.map(mapItem).filter((p): p is ScrapedProfile => p !== null);
 }
+
