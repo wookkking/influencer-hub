@@ -15,6 +15,7 @@ import {
   Trash2,
   Download,
   RefreshCw,
+  Radar,
 
   Users,
   Sparkles,
@@ -37,6 +38,8 @@ import {
 import { InfluencerFormDialog } from "@/components/influencer-form-dialog";
 import { InfluencerAvatar } from "@/components/influencer-avatar";
 import { InstagramImportDialog } from "@/components/instagram-import-dialog";
+import { HashtagDiscoverDialog } from "@/components/hashtag-discover-dialog";
+import { platformMeta } from "@/lib/platform";
 import { CampaignPicker } from "@/components/campaign-picker";
 import {
   addToCampaign,
@@ -102,6 +105,7 @@ function SearchPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Influencer | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [discoverOpen, setDiscoverOpen] = useState(false);
 
   const range = FOLLOWER_RANGES[rangeIdx]!;
   const filters: DirectoryFilters = {
@@ -208,6 +212,18 @@ function SearchPage() {
 
   const rows = directory.data ?? [];
 
+  /** 현재 조건(플랫폼 제외)에서 플랫폼별 계정 수 */
+  const countsQuery = useQuery({
+    queryKey: ["directory-counts", { ...filters, platform: "전체" }],
+    queryFn: () => fetchDirectory({ ...filters, platform: "전체" }),
+  });
+  const platformCounts = useMemo(() => {
+    const all = countsQuery.data ?? [];
+    const byPlatform: Record<string, number> = {};
+    for (const r of all) byPlatform[r.platform] = (byPlatform[r.platform] ?? 0) + 1;
+    return { total: all.length, byPlatform };
+  }, [countsQuery.data]);
+
   const activeFilters = [
     q.trim() ? { key: "q", label: `"${q.trim()}"`, clear: () => setQ("") } : null,
     platform !== "전체" ? { key: "p", label: platform, clear: () => setPlatform("전체") } : null,
@@ -265,6 +281,9 @@ function SearchPage() {
             >
               <RefreshCw className={cn("size-4", refreshAll.isPending && "animate-spin")} />
               {refreshAll.isPending ? "갱신 중…" : "전체 지표 갱신"}
+            </Button>
+            <Button variant="outline" onClick={() => setDiscoverOpen(true)}>
+              <Radar className="size-4" /> 해시태그 자동 탐색
             </Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Download className="size-4" /> SNS 가져오기
@@ -337,6 +356,49 @@ function SearchPage() {
 
       {/* 필터 바 — 스크롤해도 상단에 고정되어 조건 변경이 쉽다 */}
       <div className="sticky top-2 z-20 space-y-3 rounded-2xl border border-border bg-card/95 p-4 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            aria-pressed={platform === "전체"}
+            onClick={() => setPlatform("전체")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              platform === "전체"
+                ? "border-foreground/20 bg-foreground text-background"
+                : "border-border bg-background text-muted-foreground hover:text-foreground",
+            )}
+          >
+            전체 플랫폼
+            <span className="tabular text-[10px] opacity-70">{platformCounts.total}</span>
+          </button>
+          {PLATFORMS.map((p) => {
+            const meta = platformMeta(p);
+            const Icon = meta.icon;
+            const active = platform === p;
+            return (
+              <button
+                key={p}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setPlatform(p)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  active
+                    ? meta.badge
+                    : "border-border bg-background text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <span className={cn("size-1.5 rounded-full", meta.dot)} />
+                <Icon className="size-3.5" />
+                {p}
+                <span className="tabular text-[10px] opacity-70">
+                  {platformCounts.byPlatform[p] ?? 0}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         <div className="flex flex-wrap gap-2">
           <div className="relative min-w-[240px] flex-1">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -357,19 +419,6 @@ function SearchPage() {
               </button>
             )}
           </div>
-          <Select value={platform} onValueChange={setPlatform}>
-            <SelectTrigger className="h-10 w-[130px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="전체">전체 플랫폼</SelectItem>
-              {PLATFORMS.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Select value={String(rangeIdx)} onValueChange={(v) => setRangeIdx(Number(v))}>
             <SelectTrigger className="h-10 w-[140px]">
               <SelectValue />
@@ -501,11 +550,26 @@ function SearchPage() {
                   <InfluencerAvatar
                     account={row.account}
                     photoUrl={row.photo_url}
-                    className="size-12 text-sm ring-2 ring-background"
+                    className={cn("size-12 text-sm ring-2", platformMeta(row.platform).ring)}
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <p className="truncate text-sm font-semibold">{row.account}</p>
+                      {(() => {
+                        const meta = platformMeta(row.platform);
+                        const Icon = meta.icon;
+                        return (
+                          <span
+                            className={cn(
+                              "flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+                              meta.badge,
+                            )}
+                          >
+                            <Icon className="size-3" />
+                            {meta.label}
+                          </span>
+                        );
+                      })()}
                       {row.profile_url && (
                         <a
                           href={row.profile_url}
@@ -658,6 +722,12 @@ function SearchPage() {
         }}
         row={editing}
         onSubmit={handleSubmit}
+      />
+
+      <HashtagDiscoverDialog
+        open={discoverOpen}
+        onOpenChange={setDiscoverOpen}
+        onDone={() => queryClient.invalidateQueries({ queryKey: ["directory"] })}
       />
 
       <InstagramImportDialog
