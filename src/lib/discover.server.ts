@@ -4,7 +4,7 @@
  */
 import { runApifyActor } from "./apify.server";
 
-const IG_HASHTAG_ACTOR = "apify~instagram-hashtag-scraper";
+const IG_HASHTAG_ACTOR = "khadinakbar~instagram-hashtag-scraper";
 const TIKTOK_ACTOR = "clockworks~tiktok-scraper";
 const YOUTUBE_ACTOR = "streamers~youtube-scraper";
 
@@ -12,9 +12,14 @@ export function normalizeTag(raw: string): string {
   return raw.trim().replace(/^#/, "").replace(/\s+/g, "");
 }
 
-type IgPost = { ownerUsername?: string; owner?: { username?: string } };
+type IgPost = {
+  author_username?: string;
+  ownerUsername?: string;
+  owner?: { username?: string };
+};
 type TtPost = { authorMeta?: { name?: string } };
 type YtItem = { channelUsername?: string; channelName?: string };
+
 
 /** 해시태그로 게시물을 훑어 고유 계정 목록을 돌려준다. */
 export async function discoverHandlesByHashtag(
