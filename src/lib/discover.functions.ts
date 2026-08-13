@@ -4,6 +4,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const inputSchema = z.object({
   platform: z.enum(["인스타", "틱톡", "유튜브"]),
+  /** hashtag = 해시태그 게시물 작성자, keyword = 검색어로 노출되는 계정 */
+  mode: z.enum(["hashtag", "keyword"]).default("hashtag"),
   hashtags: z.array(z.string().trim().min(1).max(60)).min(1).max(5),
   limit: z.number().int().min(1).max(100).default(30),
   /** 팔로워 상한 (null = 제한 없음) */
@@ -23,12 +25,13 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
     if (roleError) throw roleError;
     if (!adminRow) throw new Error("관리자만 사용할 수 있습니다.");
 
-    const { discoverHandlesByHashtag } = await import("./discover.server");
+    const { discoverHandlesByHashtag, discoverHandlesByKeyword } = await import("./discover.server");
     const { persistProfiles } = await import("./instagram-sync.server");
     const instagram = await import("./instagram.server");
     const social = await import("./social.server");
 
-    const candidates = await discoverHandlesByHashtag(data.platform, data.hashtags, data.limit);
+    const discover = data.mode === "keyword" ? discoverHandlesByKeyword : discoverHandlesByHashtag;
+    const candidates = await discover(data.platform, data.hashtags, data.limit);
     const discovered = candidates.length;
 
     // 이미 등록된 계정은 제외 (중복 제거)

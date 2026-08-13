@@ -100,3 +100,77 @@ export async function discoverHandlesByHashtag(
   return Array.from(found.entries()).map(([handle, followers]) => ({ handle, followers }));
 }
 
+const IG_SEARCH_ACTOR = "apify~instagram-search-scraper";
+
+type IgSearchUser = { username?: string; followersCount?: number };
+
+/** 검색 키워드(예: "광고")로 계정을 훑어 후보를 돌려준다. 해시태그가 아닌 일반 검색어 기준. */
+export async function discoverHandlesByKeyword(
+  platform: "인스타" | "틱톡" | "유튜브",
+  keywords: string[],
+  limit: number,
+): Promise<DiscoveredCandidate[]> {
+  const terms = Array.from(new Set(keywords.map((k) => k.trim().replace(/^#/, "")).filter(Boolean)));
+  if (!terms.length) return [];
+
+  const perTerm = Math.min(200, Math.max(40, limit * 4));
+  const found = new Map<string, number | null>();
+
+  const add = (raw: string | undefined, followers?: number | null) => {
+    const handle = (raw ?? "").replace(/^@/, "").trim();
+    if (!handle) return;
+    const key = handle.toLowerCase();
+    const prev = found.get(key);
+    if (prev === undefined || (prev == null && followers != null)) {
+      found.set(key, followers ?? null);
+    }
+  };
+
+  if (platform === "인스타") {
+    for (const term of terms) {
+      const items = await runApifyActor<IgSearchUser>(
+        IG_SEARCH_ACTOR,
+        { search: term, searchType: "user", searchLimit: perTerm },
+        perTerm,
+      );
+      for (const it of items) {
+        add(it.username, typeof it.followersCount === "number" ? it.followersCount : null);
+      }
+    }
+  } else if (platform === "틱톡") {
+    const items = await runApifyActor<TtPost>(
+      TIKTOK_ACTOR,
+      {
+        searchQueries: terms,
+        resultsPerPage: perTerm,
+        shouldDownloadVideos: false,
+        shouldDownloadCovers: false,
+        shouldDownloadSlideshowImages: false,
+      },
+      perTerm * terms.length,
+    );
+    for (const it of items) {
+      add(it.authorMeta?.name, typeof it.authorMeta?.fans === "number" ? it.authorMeta.fans : null);
+    }
+  } else {
+    const items = await runApifyActor<YtItem>(
+      YOUTUBE_ACTOR,
+      {
+        searchQueries: terms,
+        maxResults: perTerm,
+        maxResultsShorts: perTerm,
+        downloadSubtitles: false,
+      },
+      perTerm * terms.length,
+    );
+    for (const it of items) {
+      add(
+        it.channelUsername ?? it.channelName,
+        typeof it.numberOfSubscribers === "number" ? it.numberOfSubscribers : null,
+      );
+    }
+  }
+
+  return Array.from(found.entries()).map(([handle, followers]) => ({ handle, followers }));
+}
+
