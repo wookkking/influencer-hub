@@ -19,6 +19,13 @@ export type ScrapedProfile = {
 };
 
 type ApifyPost = {
+  type?: string;
+  productType?: string;
+  isPinned?: boolean;
+  pinned?: boolean;
+  isVideo?: boolean;
+  videoUrl?: string;
+  videoDuration?: number;
   likesCount?: number;
   commentsCount?: number;
   timestamp?: string;
