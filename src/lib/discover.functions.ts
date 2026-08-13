@@ -54,8 +54,12 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
     const unknown = max == null ? [] : eligible.filter((c) => c.followers == null);
     const overLimit = max == null ? 0 : eligible.length - withinRange.length - unknown.length;
 
-    const ordered = [...withinRange, ...unknown].sort((a, b) => (a.followers ?? 0) - (b.followers ?? 0));
-    const handles = ordered.slice(0, data.limit).map((c) => c.handle);
+    const ordered = [...withinRange, ...unknown].sort((a, b) => {
+      if (a.koreanScore !== b.koreanScore) return b.koreanScore - a.koreanScore;
+      return (a.followers ?? Number.MAX_SAFE_INTEGER) - (b.followers ?? Number.MAX_SAFE_INTEGER);
+    });
+    // 프로필 검증에서 탈락한 후보를 보충할 수 있도록 요청 수보다 넉넉히 확인한다.
+    const handles = ordered.slice(0, Math.max(data.limit * 5, 100)).map((c) => c.handle);
 
     if (!handles.length) {
       return {
@@ -82,19 +86,25 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
     const accounts: string[] = [];
     const failed: string[] = [];
 
-    for (let i = 0; i < handles.length; i += 20) {
+    const hasKorean = (value: string | null | undefined) => /[가-힣]/.test(value ?? "");
+    const isKoreanProfile = (profile: (typeof all)[number]) =>
+      hasKorean(profile.display_name) ||
+      hasKorean(profile.bio) ||
+      (profile.recent_captions ?? []).some(hasKorean);
+
+    for (let i = 0; i < handles.length && created + updated < data.limit; i += 20) {
       const batch = handles.slice(i, i + 20);
       try {
         const all = await scrape(batch);
-        const profiles =
-          max == null
-            ? all
-            : all.filter((p) => {
-                const f = typeof p.followers === "number" ? p.followers : 0;
-                const ok = f <= max;
-                if (!ok) skippedOverLimit += 1;
-                return ok;
-              });
+        const profiles = all
+          .filter((p) => {
+            const ok = max == null || (p.followers > 0 && p.followers <= max);
+            if (!ok) skippedOverLimit += 1;
+            return ok;
+          })
+          .filter(isKoreanProfile)
+          .filter((p) => p.last_post_date != null)
+          .slice(0, data.limit - created - updated);
         if (profiles.length) {
           const results = await persistProfiles(
             context.supabase,
