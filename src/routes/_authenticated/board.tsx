@@ -45,6 +45,10 @@ import {
 } from "@/lib/influencers";
 
 export const Route = createFileRoute("/_authenticated/board")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    campaign: typeof search["campaign"] === "string" ? (search["campaign"] as string) : undefined,
+  }),
+
   head: () => ({
     meta: [
       { title: "내 캠페인 · 리치보드" },
