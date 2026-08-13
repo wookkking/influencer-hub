@@ -624,16 +624,25 @@ function BoardPage() {
                 </p>
               ) : view === "compact" ? (
                 <div className="overflow-hidden rounded-xl border border-border bg-card">
-                  <div className="grid grid-cols-[28px_minmax(170px,1.6fr)_repeat(3,minmax(88px,0.8fr))_repeat(3,minmax(72px,0.7fr))_32px] gap-2 border-b border-border bg-muted/60 px-3 py-2 text-[11px] font-semibold text-muted-foreground">
-                    <span aria-hidden />
-                    <span>인플루언서</span>
-                    <span>컨택</span>
-                    <span>답변</span>
-                    <span>조회수</span>
-                    <span>좋아요</span>
-                    <span>댓글</span>
-                    <span className="text-right">반응/도달/팔로워</span>
-                    <span />
+                  <div className="border-b border-border bg-muted/60 px-3 py-2 text-[11px] font-semibold text-muted-foreground">
+                    <div className="grid grid-cols-[28px_minmax(170px,1.6fr)_repeat(2,minmax(100px,0.8fr))_repeat(2,minmax(120px,1fr))_32px] gap-2">
+                      <span aria-hidden />
+                      <span>인플루언서</span>
+                      <span>컨택</span>
+                      <span>답변</span>
+                      <span>컨택일</span>
+                      <span>업로드일</span>
+                      <span />
+                    </div>
+                    <div className="mt-1.5 grid grid-cols-[28px_minmax(170px,1.6fr)_repeat(3,minmax(100px,0.8fr))_minmax(240px,1fr)_32px] gap-2">
+                      <span aria-hidden />
+                      <span>성과</span>
+                      <span>조회수</span>
+                      <span>좋아요</span>
+                      <span>댓글</span>
+                      <span className="text-right">반응률 · 도달률 · 팔로워반응</span>
+                      <span />
+                    </div>
                   </div>
                   {section.entries.map((e) => (
                     <CampaignInfluencerRow
