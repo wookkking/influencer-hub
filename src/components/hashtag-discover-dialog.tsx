@@ -65,11 +65,19 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
         updated: number;
         accounts: string[];
         failed: string[];
+        rejectedLanguage: number;
       }>,
     onSuccess: (res) => {
-      toast.success(
-        `자동 탐색 완료 · 발견 ${res.discovered}명, 신규 ${res.created}명, 갱신 ${res.updated}명 (중복 제외 ${res.duplicates}명)`,
-      );
+      const added = res.created + res.updated;
+      if (added > 0) {
+        toast.success(
+          `자동 탐색 완료 · 발견 ${res.discovered}명, 신규 ${res.created}명, 갱신 ${res.updated}명 (중복 제외 ${res.duplicates}명)`,
+        );
+      } else {
+        toast.warning(
+          `추가된 계정이 없습니다 · 중복 ${res.duplicates}명, 팔로워 초과 ${res.overLimit}명, 한국어 확인 불가 ${res.rejectedLanguage}명`,
+        );
+      }
       onDone();
     },
     onError: (e: Error) => toast.error(e.message || "자동 탐색에 실패했습니다."),
@@ -176,6 +184,9 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
               발견 {mutation.data.discovered}명 · 신규 {mutation.data.created}명 · 갱신{" "}
               {mutation.data.updated}명 · 중복 제외 {mutation.data.duplicates}명
               {mutation.data.overLimit ? ` · 팔로워 초과 ${mutation.data.overLimit}명` : ""}
+              {mutation.data.rejectedLanguage
+                ? ` · 한국어 확인 불가 ${mutation.data.rejectedLanguage}명`
+                : ""}
               {mutation.data.failed.length ? ` · 실패 ${mutation.data.failed.length}명` : ""}
             </p>
             {mutation.data.accounts.length > 0 && (
