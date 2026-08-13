@@ -30,7 +30,8 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
     const instagram = await import("./instagram.server");
     const social = await import("./social.server");
 
-    const candidates = await discoverHandlesByHashtag(data.platform, data.hashtags, data.limit);
+    const discover = data.mode === "keyword" ? discoverHandlesByKeyword : discoverHandlesByHashtag;
+    const candidates = await discover(data.platform, data.hashtags, data.limit);
     const discovered = candidates.length;
 
     // 이미 등록된 계정은 제외 (중복 제거)
