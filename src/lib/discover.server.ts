@@ -4,7 +4,7 @@
  */
 import { runApifyActor } from "./apify.server";
 
-const IG_HASHTAG_ACTOR = "khadinakbar~instagram-hashtag-scraper";
+const IG_HASHTAG_ACTOR = "apify~instagram-hashtag-scraper";
 const TIKTOK_ACTOR = "clockworks~tiktok-scraper";
 const YOUTUBE_ACTOR = "streamers~youtube-scraper";
 
@@ -13,13 +13,16 @@ export function normalizeTag(raw: string): string {
 }
 
 type IgPost = {
+  username?: string;
   author_username?: string;
   ownerUsername?: string;
   owner?: { username?: string };
   author_follower_count?: number;
+  ownerFollowersCount?: number;
   caption?: string;
   text?: string;
   author_full_name?: string;
+  ownerFullName?: string;
 };
 type TtPost = { authorMeta?: { name?: string; fans?: number } };
 type YtItem = { channelUsername?: string; channelName?: string; numberOfSubscribers?: number };
@@ -73,17 +76,21 @@ export async function discoverHandlesByHashtag(
       IG_HASHTAG_ACTOR,
       {
         hashtags,
-        maxPostsPerHashtag: Math.min(500, perTag),
-        mediaType: "all",
-        datePosted: "last-month",
+        keywordSearch: false,
+        resultsType: "posts",
+        resultsLimit: perTag,
       },
       perTag * hashtags.length,
     );
     for (const it of items) {
       add(
-        it.author_username ?? it.ownerUsername ?? it.owner?.username,
-        typeof it.author_follower_count === "number" ? it.author_follower_count : null,
-        [it.author_full_name, it.caption, it.text].filter(Boolean).join(" "),
+        it.author_username ?? it.ownerUsername ?? it.owner?.username ?? it.username,
+        typeof it.author_follower_count === "number"
+          ? it.author_follower_count
+          : typeof it.ownerFollowersCount === "number"
+            ? it.ownerFollowersCount
+            : null,
+        [it.author_full_name, it.ownerFullName, it.caption, it.text].filter(Boolean).join(" "),
       );
     }
   } else if (platform === "틱톡") {
@@ -123,15 +130,6 @@ export async function discoverHandlesByHashtag(
   return Array.from(found.entries()).map(([handle, value]) => ({ handle, ...value }));
 }
 
-const IG_SEARCH_ACTOR = "apify~instagram-search-scraper";
-
-type IgSearchUser = {
-  username?: string;
-  followersCount?: number;
-  fullName?: string;
-  biography?: string;
-};
-
 /** 검색 키워드(예: "광고")로 계정을 훑어 후보를 돌려준다. 해시태그가 아닌 일반 검색어 기준. */
 export async function discoverHandlesByKeyword(
   platform: "인스타" | "틱톡" | "유튜브",
@@ -156,28 +154,27 @@ export async function discoverHandlesByKeyword(
   };
 
   if (platform === "인스타") {
-    for (const term of terms) {
-      const items = await runApifyActor<IgSearchUser>(
-        IG_SEARCH_ACTOR,
-        { search: term, searchType: "user", searchLimit: perTerm },
-        perTerm,
+    // 사용자명 검색은 결과가 극히 적으므로 키워드가 포함된 공개 게시물의 작성자를 수집한다.
+    const items = await runApifyActor<IgPost>(
+      IG_HASHTAG_ACTOR,
+      {
+        hashtags: terms,
+        keywordSearch: true,
+        resultsType: "posts",
+        resultsLimit: perTerm,
+      },
+      perTerm * terms.length,
+    );
+    for (const it of items) {
+      add(
+        it.author_username ?? it.ownerUsername ?? it.owner?.username ?? it.username,
+        typeof it.author_follower_count === "number"
+          ? it.author_follower_count
+          : typeof it.ownerFollowersCount === "number"
+            ? it.ownerFollowersCount
+            : null,
+        [it.author_full_name, it.ownerFullName, it.caption, it.text].filter(Boolean).join(" "),
       );
-      for (const it of items) {
-        add(
-          it.username,
-          typeof it.followersCount === "number" ? it.followersCount : null,
-          `${it.fullName ?? ""} ${it.biography ?? ""}`,
-        );
-      }
-    }
-    // 계정 검색은 반환량이 적을 수 있어 같은 키워드의 게시물 작성자도 함께 합친다.
-    const postAuthors = await discoverHandlesByHashtag("인스타", terms, limit * 5);
-    for (const candidate of postAuthors) {
-      const prev = found.get(candidate.handle.toLowerCase());
-      found.set(candidate.handle.toLowerCase(), {
-        followers: prev?.followers ?? candidate.followers,
-        koreanScore: Math.max(prev?.koreanScore ?? 0, candidate.koreanScore),
-      });
     }
   } else if (platform === "틱톡") {
     const items = await runApifyActor<TtPost>(
