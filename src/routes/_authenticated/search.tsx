@@ -120,6 +120,9 @@ function SearchPage() {
   const saved = useQuery({ queryKey: ["saved"], queryFn: fetchSaved });
   const campaigns = useQuery({ queryKey: ["campaigns"], queryFn: fetchCampaigns });
   const members = useQuery({ queryKey: ["campaign-members"], queryFn: fetchCampaignMembers });
+  const navigate = useNavigate();
+
+
 
   const savedIds = useMemo(
     () => new Set((saved.data ?? []).map((s) => s.influencer_id)),
