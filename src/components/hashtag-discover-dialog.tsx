@@ -25,6 +25,7 @@ import {
 import { discoverInfluencersByHashtag } from "@/lib/discover.functions";
 
 type Platform = "인스타" | "틱톡" | "유튜브";
+type Mode = "hashtag" | "keyword";
 
 type Props = {
   open: boolean;
@@ -34,6 +35,7 @@ type Props = {
 
 export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
   const [platform, setPlatform] = useState<Platform>("인스타");
+  const [mode, setMode] = useState<Mode>("hashtag");
   const [raw, setRaw] = useState("광고");
   const [limit, setLimit] = useState("30");
   const [maxFollowers, setMaxFollowers] = useState("10000");
@@ -50,6 +52,7 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
       run({
         data: {
           platform,
+          mode,
           hashtags,
           limit: Number(limit),
           maxFollowers: maxFollowers === "all" ? null : Number(maxFollowers),
@@ -77,11 +80,12 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
     <Dialog open={open} onOpenChange={(o) => !mutation.isPending && onOpenChange(o)}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>해시태그로 자동 탐색</DialogTitle>
+          <DialogTitle>자동 탐색</DialogTitle>
           <DialogDescription>
-            #광고 처럼 해시태그를 입력하면 해당 게시물 작성자를 훑어 계정 정보를 정리하고 인플루언서
-            탐색 목록에 자동으로 추가합니다. 중복 계정은 제외됩니다.
-
+            {mode === "hashtag"
+              ? "#광고 처럼 해시태그를 입력하면 해당 게시물 작성자를 훑어 계정 정보를 정리합니다."
+              : "\u201c광고\u201d 처럼 검색어를 입력하면 해당 키워드로 검색되는 계정을 훑어 정보를 정리합니다."}{" "}
+            수집된 계정은 인플루언서 탐색 목록에 자동 추가되며, 중복 계정은 제외됩니다.
           </DialogDescription>
         </DialogHeader>
 
@@ -95,8 +99,21 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
           </TabsList>
         </Tabs>
 
+        <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
+          <TabsList className="w-full">
+            <TabsTrigger value="hashtag" className="flex-1" disabled={mutation.isPending}>
+              해시태그
+            </TabsTrigger>
+            <TabsTrigger value="keyword" className="flex-1" disabled={mutation.isPending}>
+              검색 키워드
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         <div className="space-y-2">
-          <Label htmlFor="tags">해시태그 (최대 5개)</Label>
+          <Label htmlFor="tags">
+            {mode === "hashtag" ? "해시태그 (최대 5개)" : "검색 키워드 (최대 5개)"}
+          </Label>
           <Input
             id="tags"
             value={raw}
@@ -105,7 +122,8 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
             disabled={mutation.isPending}
           />
           <p className="text-xs text-muted-foreground">
-            인식됨: {hashtags.map((t) => `#${t}`).join(" ") || "없음"}
+            인식됨:{" "}
+            {hashtags.map((t) => (mode === "hashtag" ? `#${t}` : t)).join(", ") || "없음"}
           </p>
         </div>
 
