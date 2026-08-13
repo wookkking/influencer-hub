@@ -5,11 +5,12 @@ type AnyClient = SupabaseClient<any, any, any>;
 
 export type SyncResult = { account: string; action: "created" | "updated" };
 
-/** Insert or update directory rows from scraped Instagram profiles. */
+/** Insert or update directory rows from scraped profiles. */
 export async function persistProfiles(
   client: AnyClient,
   profiles: ScrapedProfile[],
   createdBy: string | null,
+  platform: string = "인스타",
 ): Promise<SyncResult[]> {
   const results: SyncResult[] = [];
 
@@ -21,8 +22,9 @@ export async function persistProfiles(
       profile_url: p.profile_url,
       last_synced_at: new Date().toISOString(),
     };
-    // 인스타 CDN 링크는 만료되므로 이미지를 스토리지에 캐시해 둔다.
-    const cached = await cacheProfilePhoto(p.account, p.photo_url);
+    // CDN 링크는 만료되므로 이미지를 스토리지에 캐시해 둔다.
+    const cached = await cacheProfilePhoto(`${platform}_${p.account}`, p.photo_url);
+
     if (cached) patch["photo_url"] = cached;
     else if (p.photo_url) patch["photo_url"] = p.photo_url;
     if (p.bio) patch["bio"] = p.bio;
