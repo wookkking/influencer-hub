@@ -80,7 +80,8 @@ export function HashtagDiscoverDialog({ open, onOpenChange, onDone }: Props) {
           <DialogTitle>해시태그로 자동 탐색</DialogTitle>
           <DialogDescription>
             #광고 처럼 해시태그를 입력하면 해당 게시물 작성자를 훑어 계정 정보를 정리하고 인플루언서
-            탐색 목록에 자동으로 추가합니다. (팔로워 수 조건 없음)
+            탐색 목록에 자동으로 추가합니다. 중복 계정은 제외됩니다.
+
           </DialogDescription>
         </DialogHeader>
 
