@@ -86,10 +86,19 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
     const accounts: string[] = [];
     const failed: string[] = [];
 
+    const scrapeWithRetry = async (batch: string[]) => {
+      try {
+        return await scrape(batch);
+      } catch (firstError) {
+        console.warn("discover batch retry", firstError);
+        return scrape(batch);
+      }
+    };
+
     for (let i = 0; i < handles.length && created + updated < data.limit; i += 20) {
       const batch = handles.slice(i, i + 20);
       try {
-        const all = await scrape(batch);
+        const all = await scrapeWithRetry(batch);
         const profiles = all
           .filter((p) => {
             const ok = max == null || (p.followers > 0 && p.followers <= max);

@@ -73,7 +73,7 @@ export async function discoverHandlesByHashtag(
       IG_HASHTAG_ACTOR,
       {
         hashtags,
-        resultsLimit: perTag,
+        maxPostsPerHashtag: Math.min(500, perTag),
         mediaType: "all",
         datePosted: "last-month",
       },
