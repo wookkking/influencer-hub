@@ -25,7 +25,7 @@ export const discoverInfluencersByHashtag = createServerFn({ method: "POST" })
     if (roleError) throw roleError;
     if (!adminRow) throw new Error("관리자만 사용할 수 있습니다.");
 
-    const { discoverHandlesByHashtag } = await import("./discover.server");
+    const { discoverHandlesByHashtag, discoverHandlesByKeyword } = await import("./discover.server");
     const { persistProfiles } = await import("./instagram-sync.server");
     const instagram = await import("./instagram.server");
     const social = await import("./social.server");
