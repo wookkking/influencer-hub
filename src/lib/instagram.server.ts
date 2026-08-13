@@ -142,7 +142,7 @@ export async function scrapeInstagramProfiles(handles: string[]): Promise<Scrape
   const startRes = await fetch(`${GATEWAY_URL}/acts/${ACTOR_ID}/runs`, {
     method: "POST",
     headers,
-    body: JSON.stringify({ usernames, resultsLimit: 30 }),
+    body: JSON.stringify({ usernames }),
   });
   if (!startRes.ok) await fail(startRes, "run start");
 
