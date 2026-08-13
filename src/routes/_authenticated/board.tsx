@@ -108,6 +108,18 @@ function BoardPage() {
   const [phase, setPhase] = usePersistedState<"active" | "done" | "all">("board:phase", "active");
   const [q, setQ] = useState("");
 
+  // 탐색 페이지에서 캠페인 배지를 눌러 넘어온 경우 해당 캠페인만 선택해 보여준다.
+  const { campaign: campaignParam } = Route.useSearch();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!campaignParam) return;
+    setSelectedIds([campaignParam]);
+    setPhase("all");
+    setQ("");
+    navigate({ to: "/board", search: {}, replace: true });
+  }, [campaignParam, navigate, setSelectedIds, setPhase]);
+
+
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState<string>("default");
   const [open, setOpen] = useState(false);
