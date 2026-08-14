@@ -108,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {needsConsent && (
+      {needsConsent && hydrated && (
         <div className="border-b border-border bg-muted/50">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 text-sm sm:px-6">
             <p className="text-muted-foreground">
