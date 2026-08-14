@@ -562,12 +562,108 @@ function SearchPage() {
               평균 참여율{" "}
               <span className="tabular font-medium text-accent">{avgEngagement.toFixed(2)}%</span>
             </span>
-            <span className="ml-auto text-xs text-muted-foreground">
-              저장됨 {savedIds.size}명
-            </span>
+            <span className="text-xs text-muted-foreground">저장됨 {savedIds.size}명</span>
           </>
         )}
+        <div className="ml-auto flex items-center gap-2">
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+            <Checkbox
+              checked={rows.length > 0 && selected.length === rows.length}
+              onCheckedChange={(v) => setSelected(v ? rows.map((r) => r.id) : [])}
+            />
+            전체 선택
+          </label>
+          <div className="flex overflow-hidden rounded-lg border border-border">
+            <button
+              type="button"
+              aria-pressed={viewMode === "card"}
+              onClick={() => setViewMode("card")}
+              className={cn(
+                "flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium transition-colors",
+                viewMode === "card"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <LayoutGrid className="size-3.5" /> 카드
+            </button>
+            <button
+              type="button"
+              aria-pressed={viewMode === "compact"}
+              onClick={() => setViewMode("compact")}
+              className={cn(
+                "flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium transition-colors",
+                viewMode === "compact"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Rows3 className="size-3.5" /> 간략히
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* 선택 일괄 작업 바 */}
+      {selected.length > 0 && (
+        <div className="sticky top-2 z-30 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/40 bg-card p-3 shadow-sm">
+          <span className="text-sm font-medium">{selected.length}명 선택됨</span>
+          <Select
+            value=""
+            onValueChange={(cid) => bulk.mutate({ type: "campaign", campaignId: cid })}
+            disabled={bulk.isPending}
+          >
+            <SelectTrigger className="h-8 w-[170px] text-xs">
+              <SelectValue placeholder="캠페인에 담기" />
+            </SelectTrigger>
+            <SelectContent>
+              {(campaigns.data ?? []).map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={bulk.isPending}
+            onClick={() => bulk.mutate({ type: "save" })}
+          >
+            <BookmarkCheck className="size-3.5" /> 저장
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={bulk.isPending}
+            onClick={() => bulk.mutate({ type: "unsave" })}
+          >
+            <Bookmark className="size-3.5" /> 저장 해제
+          </Button>
+          {isAdmin && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              disabled={bulk.isPending}
+              onClick={() => {
+                if (confirm(`선택한 ${selected.length}개 계정을 삭제할까요?`))
+                  bulk.mutate({ type: "delete" });
+              }}
+            >
+              <Trash2 className="size-3.5" /> 삭제
+            </Button>
+          )}
+          <button
+            type="button"
+            className="ml-auto text-xs text-muted-foreground underline"
+            onClick={() => setSelected([])}
+          >
+            선택 해제
+          </button>
+        </div>
+      )}
+
 
       {directory.isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
