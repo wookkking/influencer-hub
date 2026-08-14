@@ -404,10 +404,6 @@ function BoardPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">내 캠페인</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            캠페인 그룹을 여러 개 선택하면 A·B·C 캠페인을 한 화면에 모아볼 수 있어요. 그룹별로
-            컨택·답변·조건과 성과는 따로 기록됩니다.
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
         <div className="flex rounded-lg border border-border bg-card p-0.5">

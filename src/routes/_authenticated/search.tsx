@@ -747,14 +747,9 @@ function SearchPage() {
                     >
                       <Icon className="size-3" />
                     </span>
-                    {row.categories.slice(0, 2).map((c) => (
+                    {row.categories.map((c) => (
                       <CategoryBadge key={c} category={c} compact />
                     ))}
-                    {row.categories.length > 2 && (
-                      <span className="text-[10px] text-muted-foreground">
-                        +{row.categories.length - 2}
-                      </span>
-                    )}
                     {row.profile_url && (
                       <a
                         href={row.profile_url}
