@@ -16,7 +16,8 @@ import {
   Download,
   RefreshCw,
   Radar,
-
+  LayoutGrid,
+  Rows3,
   Users,
   Sparkles,
   X,
@@ -25,8 +26,11 @@ import { cn } from "@/lib/utils";
 
 import { useSessionUser } from "@/hooks/use-session-user";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
