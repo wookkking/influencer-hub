@@ -337,10 +337,6 @@ function SearchPage() {
     setRangeIdx(0);
   };
 
-  const totalReach = rows.reduce((a, r) => a + r.followers, 0);
-  const avgEngagement = rows.length
-    ? rows.reduce((a, r) => a + engagement(r), 0) / rows.length
-    : 0;
 
   return (
     <div className="space-y-6">
@@ -579,18 +575,6 @@ function SearchPage() {
           <Users className="size-4 text-muted-foreground" />
           {directory.isLoading ? "불러오는 중…" : `${nf.format(rows.length)}명`}
         </span>
-        {!directory.isLoading && rows.length > 0 && (
-          <>
-            <span className="text-muted-foreground">
-              총 도달 <span className="tabular font-medium text-foreground">{nf.format(totalReach)}</span>
-            </span>
-            <span className="text-muted-foreground">
-              평균 참여율{" "}
-              <span className="tabular font-medium text-accent">{avgEngagement.toFixed(2)}%</span>
-            </span>
-            <span className="text-xs text-muted-foreground">저장됨 {savedIds.size}명</span>
-          </>
-        )}
         <div className="ml-auto flex items-center gap-2">
           <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
             <Checkbox
