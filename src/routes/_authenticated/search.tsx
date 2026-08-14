@@ -45,6 +45,7 @@ import { InstagramImportDialog } from "@/components/instagram-import-dialog";
 import { HashtagDiscoverDialog } from "@/components/hashtag-discover-dialog";
 import { platformMeta } from "@/lib/platform";
 import { CampaignPicker } from "@/components/campaign-picker";
+import { CategoryBadge } from "@/components/category-badge";
 import { CategoryPicker } from "@/components/category-picker";
 import { InfluencerDetailDialog } from "@/components/influencer-detail-dialog";
 import {
