@@ -21,6 +21,7 @@ const NAV = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { user } = useSessionUser();
   const { isAdmin } = useIsAdmin();
+  const hydrated = useHydrated();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
