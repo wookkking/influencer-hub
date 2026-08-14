@@ -288,6 +288,15 @@ export async function updateInfluencer(id: string, values: InfluencerFormValues)
   if (error) throw error;
 }
 
+/** 카테고리만 빠르게 갱신 */
+export async function updateInfluencerCategories(id: string, categories: string[]) {
+  const { error } = await supabase
+    .from("influencers")
+    .update({ categories } as never)
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function deleteInfluencer(id: string) {
   const { error } = await supabase.from("influencers").delete().eq("id", id);
   if (error) throw error;
