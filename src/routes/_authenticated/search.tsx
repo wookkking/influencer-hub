@@ -753,7 +753,7 @@ function SearchPage() {
                   className={cn("size-8 text-xs ring-2", meta.ring)}
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <p className="truncate text-sm font-medium">{row.account}</p>
                     <span
                       className={cn(
@@ -763,6 +763,14 @@ function SearchPage() {
                     >
                       <Icon className="size-3" />
                     </span>
+                    {row.categories.slice(0, 2).map((c) => (
+                      <CategoryBadge key={c} category={c} compact />
+                    ))}
+                    {row.categories.length > 2 && (
+                      <span className="text-[10px] text-muted-foreground">
+                        +{row.categories.length - 2}
+                      </span>
+                    )}
                     {row.profile_url && (
                       <a
                         href={row.profile_url}
@@ -777,7 +785,7 @@ function SearchPage() {
                     )}
                   </div>
                   <p className="truncate text-[11px] text-muted-foreground">
-                    {row.categories.join(" · ") || row.bio || "–"}
+                    {row.bio || "–"}
                   </p>
                 </div>
                 <div className="hidden w-24 text-right sm:block">
