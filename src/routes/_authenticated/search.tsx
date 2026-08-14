@@ -674,7 +674,102 @@ function SearchPage() {
             />
           ))}
         </div>
+      ) : viewMode === "compact" ? (
+        <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          {rows.map((row) => {
+            const isSaved = savedIds.has(row.id);
+            const er = engagement(row);
+            const meta = platformMeta(row.platform);
+            const Icon = meta.icon;
+            return (
+              <div
+                key={row.id}
+                className={cn(
+                  "flex items-center gap-3 border-b border-border/70 px-3 py-2 last:border-b-0 transition-colors hover:bg-muted/40",
+                  selectedSet.has(row.id) && "bg-primary/5",
+                )}
+              >
+                <Checkbox
+                  checked={selectedSet.has(row.id)}
+                  onCheckedChange={() => toggleSelect(row.id)}
+                  aria-label={`${row.account} 선택`}
+                />
+                <InfluencerAvatar
+                  account={row.account}
+                  photoUrl={row.photo_url}
+                  className={cn("size-8 text-xs ring-2", meta.ring)}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-sm font-medium">{row.account}</p>
+                    <span
+                      className={cn(
+                        "flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]",
+                        meta.badge,
+                      )}
+                    >
+                      <Icon className="size-3" />
+                    </span>
+                    {row.profile_url && (
+                      <a
+                        href={row.profile_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`${row.account} 프로필 열기`}
+                        className="text-muted-foreground hover:text-primary"
+                      >
+                        <ExternalLink className="size-3" />
+                      </a>
+                    )}
+                  </div>
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    {row.categories.join(" · ") || row.bio || "–"}
+                  </p>
+                </div>
+                <div className="hidden w-24 text-right sm:block">
+                  <p className="tabular text-sm font-semibold">{nf.format(row.followers)}</p>
+                  <p className="text-[10px] text-muted-foreground">팔로워</p>
+                </div>
+                <div className="hidden w-24 text-right md:block">
+                  <p className="tabular text-sm font-semibold">
+                    {row.avg_views ? nf.format(row.avg_views) : "–"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">평균 조회수</p>
+                </div>
+                <div className="w-20 text-right">
+                  <p className={cn("tabular text-sm font-semibold", er >= 3 && "text-accent")}>
+                    {er.toFixed(2)}%
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">참여율</p>
+                </div>
+                <Button
+                  size="icon"
+                  variant={isSaved ? "default" : "ghost"}
+                  className="size-8 shrink-0"
+                  aria-label={isSaved ? "리스트에서 제거" : "내 리스트에 저장"}
+                  onClick={() => toggleSave.mutate(row.id)}
+                >
+                  {isSaved ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
+                </Button>
+                {isAdmin && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-8 shrink-0 text-destructive hover:text-destructive"
+                    aria-label={`${row.account} 삭제`}
+                    onClick={() => {
+                      if (confirm(`${row.account} 계정을 삭제할까요?`)) remove.mutate(row.id);
+                    }}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+        </div>
       ) : (
+
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((row) => {
             const isSaved = savedIds.has(row.id);
