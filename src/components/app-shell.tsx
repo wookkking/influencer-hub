@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionUser } from "@/hooks/use-session-user";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { acceptRequiredTerms, fetchMyProfile } from "@/lib/accounts";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
