@@ -791,6 +791,13 @@ function SearchPage() {
                   )}
                 />
                 <div className="flex items-start gap-3">
+                  <Checkbox
+                    className="mt-1"
+                    checked={selectedSet.has(row.id)}
+                    onCheckedChange={() => toggleSelect(row.id)}
+                    aria-label={`${row.account} 선택`}
+                  />
+
                   <InfluencerAvatar
                     account={row.account}
                     photoUrl={row.photo_url}
