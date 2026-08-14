@@ -211,6 +211,45 @@ function SearchPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "삭제에 실패했습니다"),
   });
 
+  /** 선택된 계정 일괄 작업 */
+  const bulk = useMutation({
+    mutationFn: async (action: { type: "save" | "unsave" | "delete" | "campaign"; campaignId?: string }) => {
+      if (!user) throw new Error("로그인이 필요합니다");
+      for (const id of selected) {
+        if (action.type === "save") {
+          if (!savedIds.has(id)) await saveInfluencer(id, user.id);
+        } else if (action.type === "unsave") {
+          if (savedIds.has(id)) await unsaveInfluencer(id);
+        } else if (action.type === "delete") {
+          await deleteInfluencer(id);
+        } else if (action.type === "campaign" && action.campaignId) {
+          const sid = savedRowId.get(id) ?? (await saveInfluencer(id, user.id));
+          await addToCampaign(action.campaignId, sid, user.id);
+        }
+      }
+      return action.type;
+    },
+    onSuccess: async (type) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["directory"] }),
+        queryClient.invalidateQueries({ queryKey: ["saved"] }),
+        queryClient.invalidateQueries({ queryKey: ["campaign-members"] }),
+      ]);
+      toast.success(
+        type === "save"
+          ? "선택한 계정을 저장했습니다"
+          : type === "unsave"
+            ? "선택한 계정을 저장 해제했습니다"
+            : type === "delete"
+              ? "선택한 계정을 삭제했습니다"
+              : "선택한 계정을 캠페인에 담았습니다",
+      );
+      setSelected([]);
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "일괄 작업에 실패했습니다"),
+  });
+
+
   async function handleSubmit(values: InfluencerFormValues) {
     if (!user) return;
     if (editing) {
