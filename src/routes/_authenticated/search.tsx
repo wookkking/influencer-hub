@@ -983,17 +983,15 @@ function SearchPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1">
-                  {row.categories.map((c) => (
-                    <Badge key={c} variant="outline" className="text-[11px] font-normal">
-                      {c}
-                    </Badge>
-                  ))}
                   {isAdmin && (
                     <CategoryPicker
                       value={row.categories}
                       disabled={setCategories.isPending}
                       onChange={(next) => setCategories.mutate({ id: row.id, categories: next })}
                     />
+                  )}
+                  {!isAdmin && row.categories.length === 0 && (
+                    <span className="text-xs text-muted-foreground">카테고리 미지정</span>
                   )}
                 </div>
 
