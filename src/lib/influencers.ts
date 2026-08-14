@@ -107,6 +107,7 @@ export const CATEGORIES = [
   "여행",
   "테크",
   "펫",
+  "기타",
 ] as const;
 
 export const nf = new Intl.NumberFormat("ko-KR");
@@ -283,6 +284,15 @@ export async function updateInfluencer(id: string, values: InfluencerFormValues)
   const { error } = await supabase
     .from("influencers")
     .update(toInfluencerRow(values) as never)
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** 카테고리만 빠르게 갱신 */
+export async function updateInfluencerCategories(id: string, categories: string[]) {
+  const { error } = await supabase
+    .from("influencers")
+    .update({ categories } as never)
     .eq("id", id);
   if (error) throw error;
 }
