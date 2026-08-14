@@ -31,7 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 
-import { Badge } from "@/components/ui/badge";
+
 import {
   Select,
   SelectContent,
