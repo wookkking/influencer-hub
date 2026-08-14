@@ -129,13 +129,13 @@ export function categorySlug(category: string) {
   return CATEGORY_SLUGS[category] ?? "etc";
 }
 
-export function categoryStyle(category: string) {
+export function categoryStyle(category: string): CSSProperties {
   const slug = categorySlug(category);
   return {
     backgroundColor: `var(--cat-${slug}-bg)`,
     color: `var(--cat-${slug}-fg)`,
     borderColor: `var(--cat-${slug}-border)`,
-  } as React.CSSProperties;
+  };
 }
 
 export const nf = new Intl.NumberFormat("ko-KR");
