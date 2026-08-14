@@ -337,10 +337,6 @@ function SearchPage() {
     setRangeIdx(0);
   };
 
-  const totalReach = rows.reduce((a, r) => a + r.followers, 0);
-  const avgEngagement = rows.length
-    ? rows.reduce((a, r) => a + engagement(r), 0) / rows.length
-    : 0;
 
   return (
     <div className="space-y-6">
