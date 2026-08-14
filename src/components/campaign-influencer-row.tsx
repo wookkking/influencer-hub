@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, ChevronRight, Circle, ExternalLink } from "lucide-react";
 
+import { CategoryBadge } from "@/components/category-badge";
 import { InfluencerAvatar } from "@/components/influencer-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
