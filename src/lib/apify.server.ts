@@ -22,6 +22,14 @@ function headers() {
 const fail = async (res: Response, stage: string): Promise<never> => {
   const body = await res.text();
   console.error(`Apify ${stage} failed [${res.status}]: ${body}`);
+  if (res.status === 402 || body.includes("not-enough-usage-to-run-paid-actor")) {
+    throw new Error(
+      "Apify 사용 한도가 부족해 수집을 시작할 수 없습니다. Apify 계정의 남은 크레딧을 충전하거나 요금제를 업그레이드한 뒤 다시 시도해 주세요.",
+    );
+  }
+  if (res.status === 429) {
+    throw new Error("Apify 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.");
+  }
   throw new Error(`수집 실패 [${res.status}]: ${body.slice(0, 300)}`);
 };
 
