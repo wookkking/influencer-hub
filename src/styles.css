@@ -95,6 +95,41 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+
+  /* Category chip colors (light) */
+  --cat-beauty-bg: oklch(0.94 0.04 10);
+  --cat-beauty-fg: oklch(0.45 0.12 10);
+  --cat-beauty-border: oklch(0.86 0.04 10);
+  --cat-fashion-bg: oklch(0.92 0.05 300);
+  --cat-fashion-fg: oklch(0.42 0.14 300);
+  --cat-fashion-border: oklch(0.82 0.05 300);
+  --cat-daily-bg: oklch(0.93 0.04 230);
+  --cat-daily-fg: oklch(0.4 0.12 230);
+  --cat-daily-border: oklch(0.83 0.04 230);
+  --cat-food-bg: oklch(0.94 0.05 65);
+  --cat-food-fg: oklch(0.45 0.13 65);
+  --cat-food-border: oklch(0.85 0.05 65);
+  --cat-home-bg: oklch(0.93 0.04 140);
+  --cat-home-fg: oklch(0.35 0.11 140);
+  --cat-home-border: oklch(0.8 0.04 140);
+  --cat-health-bg: oklch(0.93 0.05 120);
+  --cat-health-fg: oklch(0.35 0.12 120);
+  --cat-health-border: oklch(0.82 0.05 120);
+  --cat-kids-bg: oklch(0.95 0.05 85);
+  --cat-kids-fg: oklch(0.42 0.12 85);
+  --cat-kids-border: oklch(0.85 0.05 85);
+  --cat-travel-bg: oklch(0.93 0.05 210);
+  --cat-travel-fg: oklch(0.38 0.12 210);
+  --cat-travel-border: oklch(0.82 0.05 210);
+  --cat-tech-bg: oklch(0.9 0.03 260);
+  --cat-tech-fg: oklch(0.38 0.1 260);
+  --cat-tech-border: oklch(0.78 0.03 260);
+  --cat-pet-bg: oklch(0.93 0.05 55);
+  --cat-pet-fg: oklch(0.43 0.12 55);
+  --cat-pet-border: oklch(0.84 0.05 55);
+  --cat-etc-bg: oklch(0.92 0.01 260);
+  --cat-etc-fg: oklch(0.45 0.05 260);
+  --cat-etc-border: oklch(0.82 0.01 260);
 }
 
 
