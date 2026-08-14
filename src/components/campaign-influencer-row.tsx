@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, ChevronRight, Circle, ExternalLink } from "lucide-react";
 
+import { CategoryBadge } from "@/components/category-badge";
 import { InfluencerAvatar } from "@/components/influencer-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -109,6 +110,13 @@ export function CampaignInfluencerRow({
               >
                 @{influencer?.account}
               </button>
+              {influencer?.categories && influencer.categories.length > 0 && (
+                <span className="flex shrink-0 items-center gap-1">
+                  {influencer.categories.map((category) => (
+                    <CategoryBadge key={category} category={category} compact />
+                  ))}
+                </span>
+              )}
               {influencer?.profile_url && (
                 <a
                   href={influencer.profile_url}
