@@ -13,9 +13,8 @@ import { CategoryPicker } from "@/components/category-picker";
 import { CampaignPicker } from "@/components/campaign-picker";
 import { platformMeta } from "@/lib/platform";
 import { engagement, nf, type Influencer } from "@/lib/influencers";
+import type { Campaign } from "@/lib/campaigns";
 import { cn } from "@/lib/utils";
-
-type Campaign = { id: string; name: string; color?: string | null };
 
 type Props = {
   row: Influencer | null;
