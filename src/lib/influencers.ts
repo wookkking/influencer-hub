@@ -110,6 +110,33 @@ export const CATEGORIES = [
   "기타",
 ] as const;
 
+const CATEGORY_SLUGS: Record<string, string> = {
+  "뷰티": "beauty",
+  "패션": "fashion",
+  "일상": "daily",
+  "푸드": "food",
+  "홈/리빙": "home",
+  "건강/다이어트": "health",
+  "육아/키즈": "kids",
+  "여행": "travel",
+  "테크": "tech",
+  "펫": "pet",
+  "기타": "etc",
+};
+
+export function categorySlug(category: string) {
+  return CATEGORY_SLUGS[category] ?? "etc";
+}
+
+export function categoryStyle(category: string) {
+  const slug = categorySlug(category);
+  return {
+    backgroundColor: `var(--cat-${slug}-bg)`,
+    color: `var(--cat-${slug}-fg)`,
+    borderColor: `var(--cat-${slug}-border)`,
+  } as React.CSSProperties;
+}
+
 export const nf = new Intl.NumberFormat("ko-KR");
 
 export function engagement(row: Pick<Influencer, "followers" | "avg_likes" | "avg_comments">) {
