@@ -117,6 +117,13 @@ export function CampaignInfluencerCard({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <p className="truncate text-base font-semibold">{influencer?.account}</p>
+              {influencer?.categories && influencer.categories.length > 0 && (
+                <span className="flex shrink-0 items-center gap-1">
+                  {influencer.categories.map((category) => (
+                    <CategoryBadge key={category} category={category} compact />
+                  ))}
+                </span>
+              )}
               {influencer?.profile_url && (
                 <a
                   href={influencer.profile_url}

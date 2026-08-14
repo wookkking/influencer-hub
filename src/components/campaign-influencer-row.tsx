@@ -110,6 +110,13 @@ export function CampaignInfluencerRow({
               >
                 @{influencer?.account}
               </button>
+              {influencer?.categories && influencer.categories.length > 0 && (
+                <span className="flex shrink-0 items-center gap-1">
+                  {influencer.categories.map((category) => (
+                    <CategoryBadge key={category} category={category} compact />
+                  ))}
+                </span>
+              )}
               {influencer?.profile_url && (
                 <a
                   href={influencer.profile_url}
