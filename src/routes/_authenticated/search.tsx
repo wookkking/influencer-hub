@@ -45,6 +45,8 @@ import { InstagramImportDialog } from "@/components/instagram-import-dialog";
 import { HashtagDiscoverDialog } from "@/components/hashtag-discover-dialog";
 import { platformMeta } from "@/lib/platform";
 import { CampaignPicker } from "@/components/campaign-picker";
+import { CategoryPicker } from "@/components/category-picker";
+import { InfluencerDetailDialog } from "@/components/influencer-detail-dialog";
 import {
   addToCampaign,
   fetchCampaignMembers,
@@ -64,6 +66,7 @@ import {
   saveInfluencer,
   unsaveInfluencer,
   updateInfluencer,
+  updateInfluencerCategories,
   type DirectoryFilters,
   type Influencer,
   type InfluencerFormValues,
@@ -114,6 +117,7 @@ function SearchPage() {
     "search-view-mode",
     "card",
   );
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const selectedSet = useMemo(() => new Set(selected), [selected]);
   const toggleSelect = (id: string) =>
@@ -211,9 +215,24 @@ function SearchPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "삭제에 실패했습니다"),
   });
 
+  /** 카테고리 빠른 지정 */
+  const setCategories = useMutation({
+    mutationFn: ({ id, categories }: { id: string; categories: string[] }) =>
+      updateInfluencerCategories(id, categories),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["directory"] });
+      toast.success("카테고리를 저장했습니다");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "카테고리 저장에 실패했습니다"),
+  });
+
   /** 선택된 계정 일괄 작업 */
   const bulk = useMutation({
-    mutationFn: async (action: { type: "save" | "unsave" | "delete" | "campaign"; campaignId?: string }) => {
+    mutationFn: async (action: {
+      type: "save" | "unsave" | "delete" | "campaign" | "category";
+      campaignId?: string;
+      category?: string;
+    }) => {
       if (!user) throw new Error("로그인이 필요합니다");
       for (const id of selected) {
         if (action.type === "save") {
@@ -222,6 +241,10 @@ function SearchPage() {
           if (savedIds.has(id)) await unsaveInfluencer(id);
         } else if (action.type === "delete") {
           await deleteInfluencer(id);
+        } else if (action.type === "category" && action.category) {
+          const row = rows.find((r) => r.id === id);
+          const next = Array.from(new Set([...(row?.categories ?? []), action.category]));
+          await updateInfluencerCategories(id, next);
         } else if (action.type === "campaign" && action.campaignId) {
           const sid = savedRowId.get(id) ?? (await saveInfluencer(id, user.id));
           await addToCampaign(action.campaignId, sid, user.id);
@@ -242,7 +265,9 @@ function SearchPage() {
             ? "선택한 계정을 저장 해제했습니다"
             : type === "delete"
               ? "선택한 계정을 삭제했습니다"
-              : "선택한 계정을 캠페인에 담았습니다",
+              : type === "category"
+                ? "선택한 계정에 카테고리를 추가했습니다"
+                : "선택한 계정을 캠페인에 담았습니다",
       );
       setSelected([]);
     },
@@ -610,6 +635,22 @@ function SearchPage() {
           <span className="text-sm font-medium">{selected.length}명 선택됨</span>
           <Select
             value=""
+            onValueChange={(cat) => bulk.mutate({ type: "category", category: cat })}
+            disabled={bulk.isPending}
+          >
+            <SelectTrigger className="h-8 w-[150px] text-xs">
+              <SelectValue placeholder="카테고리 추가" />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value=""
             onValueChange={(cid) => bulk.mutate({ type: "campaign", campaignId: cid })}
             disabled={bulk.isPending}
           >
@@ -684,16 +725,27 @@ function SearchPage() {
             return (
               <div
                 key={row.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setDetailId(row.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setDetailId(row.id);
+                  }
+                }}
                 className={cn(
-                  "flex items-center gap-3 border-b border-border/70 px-3 py-2 last:border-b-0 transition-colors hover:bg-muted/40",
+                  "flex cursor-pointer items-center gap-3 border-b border-border/70 px-3 py-2 last:border-b-0 transition-colors hover:bg-muted/40",
                   selectedSet.has(row.id) && "bg-primary/5",
                 )}
               >
-                <Checkbox
-                  checked={selectedSet.has(row.id)}
-                  onCheckedChange={() => toggleSelect(row.id)}
-                  aria-label={`${row.account} 선택`}
-                />
+                <span onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedSet.has(row.id)}
+                    onCheckedChange={() => toggleSelect(row.id)}
+                    aria-label={`${row.account} 선택`}
+                  />
+                </span>
                 <InfluencerAvatar
                   account={row.account}
                   photoUrl={row.photo_url}
@@ -717,6 +769,7 @@ function SearchPage() {
                         rel="noreferrer"
                         aria-label={`${row.account} 프로필 열기`}
                         className="text-muted-foreground hover:text-primary"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <ExternalLink className="size-3" />
                       </a>
@@ -742,12 +795,23 @@ function SearchPage() {
                   </p>
                   <p className="text-[10px] text-muted-foreground">참여율</p>
                 </div>
+                {isAdmin && (
+                  <CategoryPicker
+                    compact
+                    value={row.categories}
+                    disabled={setCategories.isPending}
+                    onChange={(next) => setCategories.mutate({ id: row.id, categories: next })}
+                  />
+                )}
                 <Button
                   size="icon"
                   variant={isSaved ? "default" : "ghost"}
                   className="size-8 shrink-0"
                   aria-label={isSaved ? "리스트에서 제거" : "내 리스트에 저장"}
-                  onClick={() => toggleSave.mutate(row.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSave.mutate(row.id);
+                  }}
                 >
                   {isSaved ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
                 </Button>
@@ -757,7 +821,8 @@ function SearchPage() {
                     variant="ghost"
                     className="size-8 shrink-0 text-destructive hover:text-destructive"
                     aria-label={`${row.account} 삭제`}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (confirm(`${row.account} 계정을 삭제할까요?`)) remove.mutate(row.id);
                     }}
                   >
@@ -900,15 +965,20 @@ function SearchPage() {
                   <p className="mt-1.5 text-[10px] text-muted-foreground/80">최근 게시글 9개 기준</p>
                 </div>
 
-                {row.categories.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {row.categories.map((c) => (
-                      <Badge key={c} variant="outline" className="text-[11px] font-normal">
-                        {c}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
+                <div className="flex flex-wrap items-center gap-1">
+                  {row.categories.map((c) => (
+                    <Badge key={c} variant="outline" className="text-[11px] font-normal">
+                      {c}
+                    </Badge>
+                  ))}
+                  {isAdmin && (
+                    <CategoryPicker
+                      value={row.categories}
+                      disabled={setCategories.isPending}
+                      onChange={(next) => setCategories.mutate({ id: row.id, categories: next })}
+                    />
+                  )}
+                </div>
 
                 <div className="mt-auto space-y-2 border-t border-border/70 pt-3">
                   <CampaignPicker
@@ -964,6 +1034,29 @@ function SearchPage() {
           )}
         </div>
       )}
+
+      <InfluencerDetailDialog
+        row={rows.find((r) => r.id === detailId) ?? null}
+        open={detailId !== null}
+        onOpenChange={(o) => !o && setDetailId(null)}
+        isSaved={detailId ? savedIds.has(detailId) : false}
+        onToggleSave={() => detailId && toggleSave.mutate(detailId)}
+        canEdit={isAdmin}
+        onEdit={() => {
+          const row = rows.find((r) => r.id === detailId);
+          if (!row) return;
+          setDetailId(null);
+          setEditing(row);
+          setDialogOpen(true);
+        }}
+        onCategoriesChange={(next) =>
+          detailId && setCategories.mutate({ id: detailId, categories: next })
+        }
+        campaigns={campaigns.data ?? []}
+        campaignIds={(detailId && groupsOf.get(detailId)) || []}
+        onToggleCampaign={(cid, next) => detailId && toggleGroup(detailId, cid, next)}
+        onOpenCampaign={(cid) => navigate({ to: "/board", search: { campaign: cid } })}
+      />
 
       <InfluencerFormDialog
         open={dialogOpen}
