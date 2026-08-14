@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Check, Tag } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES } from "@/lib/influencers";
+import { CATEGORIES, categoryStyle } from "@/lib/influencers";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -48,15 +47,21 @@ export function CategoryPicker({ value, onChange, disabled, compact, className }
           {CATEGORIES.map((cat) => {
             const active = value.includes(cat);
             return (
-              <Badge
+              <button
                 key={cat}
-                variant={active ? "default" : "outline"}
-                className="cursor-pointer select-none gap-1 px-2 py-1 text-xs font-medium"
+                type="button"
+                style={active ? categoryStyle(cat) : undefined}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition-colors",
+                  active
+                    ? "border-transparent"
+                    : "border-border bg-background text-muted-foreground hover:text-foreground",
+                )}
                 onClick={() => toggle(cat)}
               >
                 {active && <Check className="size-3" />}
                 {cat}
-              </Badge>
+              </button>
             );
           })}
         </div>

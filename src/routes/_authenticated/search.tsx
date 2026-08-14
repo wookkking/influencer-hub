@@ -31,7 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 
-import { Badge } from "@/components/ui/badge";
+
 import {
   Select,
   SelectContent,
@@ -45,6 +45,7 @@ import { InstagramImportDialog } from "@/components/instagram-import-dialog";
 import { HashtagDiscoverDialog } from "@/components/hashtag-discover-dialog";
 import { platformMeta } from "@/lib/platform";
 import { CampaignPicker } from "@/components/campaign-picker";
+import { CategoryBadge } from "@/components/category-badge";
 import { CategoryPicker } from "@/components/category-picker";
 import { InfluencerDetailDialog } from "@/components/influencer-detail-dialog";
 import {
@@ -752,7 +753,7 @@ function SearchPage() {
                   className={cn("size-8 text-xs ring-2", meta.ring)}
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <p className="truncate text-sm font-medium">{row.account}</p>
                     <span
                       className={cn(
@@ -762,6 +763,14 @@ function SearchPage() {
                     >
                       <Icon className="size-3" />
                     </span>
+                    {row.categories.slice(0, 2).map((c) => (
+                      <CategoryBadge key={c} category={c} compact />
+                    ))}
+                    {row.categories.length > 2 && (
+                      <span className="text-[10px] text-muted-foreground">
+                        +{row.categories.length - 2}
+                      </span>
+                    )}
                     {row.profile_url && (
                       <a
                         href={row.profile_url}
@@ -776,7 +785,7 @@ function SearchPage() {
                     )}
                   </div>
                   <p className="truncate text-[11px] text-muted-foreground">
-                    {row.categories.join(" · ") || row.bio || "–"}
+                    {row.bio || "–"}
                   </p>
                 </div>
                 <div className="hidden w-24 text-right sm:block">
@@ -869,7 +878,7 @@ function SearchPage() {
                     className={cn("size-12 text-sm ring-2", platformMeta(row.platform).ring)}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="truncate text-sm font-semibold">{row.account}</p>
                       {(() => {
                         const meta = platformMeta(row.platform);
@@ -886,6 +895,14 @@ function SearchPage() {
                           </span>
                         );
                       })()}
+                      {row.categories.slice(0, 2).map((c) => (
+                        <CategoryBadge key={c} category={c} compact />
+                      ))}
+                      {row.categories.length > 2 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          +{row.categories.length - 2}
+                        </span>
+                      )}
                       {row.profile_url && (
                         <a
                           href={row.profile_url}
@@ -966,17 +983,15 @@ function SearchPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1">
-                  {row.categories.map((c) => (
-                    <Badge key={c} variant="outline" className="text-[11px] font-normal">
-                      {c}
-                    </Badge>
-                  ))}
                   {isAdmin && (
                     <CategoryPicker
                       value={row.categories}
                       disabled={setCategories.isPending}
                       onChange={(next) => setCategories.mutate({ id: row.id, categories: next })}
                     />
+                  )}
+                  {!isAdmin && row.categories.length === 0 && (
+                    <span className="text-xs text-muted-foreground">카테고리 미지정</span>
                   )}
                 </div>
 

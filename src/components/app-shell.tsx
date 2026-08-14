@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionUser } from "@/hooks/use-session-user";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { acceptRequiredTerms, fetchMyProfile } from "@/lib/accounts";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ const NAV = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { user } = useSessionUser();
   const { isAdmin } = useIsAdmin();
+  const hydrated = useHydrated();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -106,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {needsConsent && (
+      {needsConsent && hydrated && (
         <div className="border-b border-border bg-muted/50">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 text-sm sm:px-6">
             <p className="text-muted-foreground">
