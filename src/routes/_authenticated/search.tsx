@@ -878,7 +878,7 @@ function SearchPage() {
                     className={cn("size-12 text-sm ring-2", platformMeta(row.platform).ring)}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="truncate text-sm font-semibold">{row.account}</p>
                       {(() => {
                         const meta = platformMeta(row.platform);
@@ -895,6 +895,14 @@ function SearchPage() {
                           </span>
                         );
                       })()}
+                      {row.categories.slice(0, 2).map((c) => (
+                        <CategoryBadge key={c} category={c} compact />
+                      ))}
+                      {row.categories.length > 2 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          +{row.categories.length - 2}
+                        </span>
+                      )}
                       {row.profile_url && (
                         <a
                           href={row.profile_url}
