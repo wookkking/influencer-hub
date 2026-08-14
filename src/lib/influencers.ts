@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import type { CSSProperties } from "react";
 
 export type Influencer = {
   id: string;
