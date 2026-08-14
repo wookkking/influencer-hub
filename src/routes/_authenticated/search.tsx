@@ -110,6 +110,16 @@ function SearchPage() {
   const [editing, setEditing] = useState<Influencer | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [discoverOpen, setDiscoverOpen] = useState(false);
+  const [viewMode, setViewMode] = usePersistedState<"card" | "compact">(
+    "search-view-mode",
+    "card",
+  );
+  const [selected, setSelected] = useState<string[]>([]);
+  const selectedSet = useMemo(() => new Set(selected), [selected]);
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+
 
   const range = FOLLOWER_RANGES[rangeIdx]!;
   const filters: DirectoryFilters = {
