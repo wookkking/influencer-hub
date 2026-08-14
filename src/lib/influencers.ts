@@ -107,6 +107,7 @@ export const CATEGORIES = [
   "여행",
   "테크",
   "펫",
+  "기타",
 ] as const;
 
 export const nf = new Intl.NumberFormat("ko-KR");
