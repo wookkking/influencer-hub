@@ -81,6 +81,11 @@ function isReel(p: ApifyPost): boolean {
 
 function mapItem(item: ApifyItem): ScrapedProfile | null {
   if (!item.username) return null;
+  // Apify가 error를 반환한 경우(비공개·제한 프로필 등)는 0으로 덮어쓰지 않고 실패로 처리
+  if (item.error) {
+    console.warn(`Instagram scrape skipped (${item.username}): ${item.error}`);
+    return null;
+  }
   // 최근 업로드 릴스 기준으로 평균을 계산 (고정 게시물 제외, 최신순 상위 9개)
   const all = [...(item.latestPosts ?? [])].filter((p) => !isPinnedPost(p));
   const reels = all.filter(isReel);
