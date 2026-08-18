@@ -147,13 +147,17 @@ export function engagement(row: Pick<Influencer, "followers" | "avg_likes" | "av
 
 /* ---------------- directory entry form ---------------- */
 
+// 저장된 프로필 사진은 `/api/public/...` 같은 내부 경로일 수 있으므로 상대 경로도 허용한다.
 const optionalUrl = z
   .string()
   .trim()
   .max(500)
-  .url({ message: "올바른 URL을 입력하세요" })
+  .refine((v) => v === "" || v.startsWith("/") || /^https?:\/\/\S+$/i.test(v), {
+    message: "올바른 URL을 입력하세요",
+  })
   .optional()
   .or(z.literal(""));
+
 
 export const influencerSchema = z.object({
   platform: z.enum(PLATFORMS),
